@@ -1,0 +1,113 @@
+{extend name="layout/base" /}{block name="content"}
+<div class="store-container">
+  <nav class="store-breadcrumb">
+    <a href="/list">资料目录</a><span>/</span
+    ><a href="/list?category_id={$material.category_id}"
+      >{$material.category.name|default='数字资料'}</a
+    ><span>/</span><span>资料详情</span>
+  </nav>
+  <section class="product-overview">
+    <div class="product-art">
+      <span class="eyebrow">A LITTLE SOMETHING USEFUL</span
+      ><img
+        src="{$material.cover ?: '/static/img/sample-fallback.svg'}"
+        alt="{$material.title}"
+      />
+    </div>
+    <div class="product-copy">
+      <span class="eyebrow"
+        >{$material.category.name|default='DIGITAL RESOURCE'}</span
+      >
+      <h1>{$material.title}</h1>
+      <p class="product-summary">{$material.summary}</p>
+      <div class="product-tags">
+        {foreach $tagList as $tag}<span>{$tag}</span>{/foreach}
+      </div>
+      <div class="product-specs">
+        <span
+          ><small>文件格式</small
+          ><b>{$material.file_format ?: '电子资料'}</b></span
+        ><span
+          ><small>内容章节</small
+          ><b>{:count($material.catalog??[])} 章</b></span
+        ><span
+          ><small>交付方式</small
+          ><b>{$material.goods_type==2?'激活码':'在线获取'}</b></span
+        >
+      </div>
+      <div class="product-price">
+        {if $material.price==0}<strong>免费获取</strong>{else}<strong
+          ><small>¥</small>{$material.price}</strong
+        >{if
+        $material.original_price>$material.price}<s>¥{$material.original_price}</s>{/if}{/if}
+      </div>
+      <div class="product-purchase">
+        {if $hasPurchased}<button
+          class="button"
+          onclick="downloadMaterial({$material.id})"
+        >
+          <i class="fa-solid fa-download"></i> 下载资料</button
+        >{else}<button class="button" onclick="buyMaterial({$material.id})">
+          {$material.price==0?'领取这份资料':'获取这份资料'} →</button
+        >{if $material.price>0}<button
+          class="button secondary"
+          onclick="addToCartMaterial({$material.id})"
+        >
+          加入购物车</button
+        >{/if}{/if}
+      </div>
+      <p class="product-fineprint">
+        获取后可从「我的资料」随时找回。{if !empty($material.wechat) ||
+        !empty($siteConfig.default_wechat)}<span
+          >客服：{$material.wechat ?: $siteConfig.default_wechat}</span
+        >{/if}
+      </p>
+    </div>
+  </section>
+  <div class="product-body">
+    <aside class="product-outline">
+      <span class="eyebrow">IN THIS RESOURCE</span>
+      <h2>内容目录</h2>
+      {foreach $material.catalog as $chapter}<a href="#description"
+        ><small>{$chapter.label|default=''}</small>{$chapter.title}</a
+      >{/foreach}
+    </aside>
+    <article>
+      <section class="product-section" id="description">
+        <span class="eyebrow">WHAT'S INSIDE</span>
+        <h2>关于这份资料</h2>
+        <div class="product-description">{$material.description|raw}</div>
+      </section>
+      {if !empty($material.previews)}
+      <section class="product-section">
+        <span class="eyebrow">TAKE A PEEK</span>
+        <h2>翻开看一看</h2>
+        <div class="product-previews">
+          {foreach $material.previews as $preview}<a
+            href="{$preview.image_path}"
+            target="_blank"
+            rel="noopener"
+            ><img
+              src="{$preview.image_path}"
+              alt="资料预览"
+              loading="lazy" /></a
+          >{/foreach}
+        </div>
+      </section>
+      {/if}
+    </article>
+  </div>
+  {if !empty($related)}
+  <section class="store-collection">
+    <div class="collection-heading">
+      <h2>你可能还会喜欢</h2>
+      <a href="/list">浏览更多 →</a>
+    </div>
+    <div class="resource-grid">
+      {foreach $related as $item}{include file="material/card" item=$item
+      /}{/foreach}
+    </div>
+  </section>
+  {/if}
+</div>
+{/block}

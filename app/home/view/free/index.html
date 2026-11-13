@@ -1,0 +1,131 @@
+{extend name="layout/base" /}
+
+{block name="content"}
+<div class="fz-page">
+  <div class="home-container">
+
+    <!-- 横幅：一行就够，标题说明在左，统计在右 -->
+    <section class="fz-hero">
+      <div class="fz-hero-copy">
+        <h1><i class="fa-solid fa-gift"></i> 免费资料专区</h1>
+        <p>满足条件即可免费领取，领到的资料随时回来都能再看</p>
+      </div>
+      <div class="fz-hero-stats">
+        <span><b>{:count($list)}</b>份免费资料</span>
+        <span><b>{:array_sum(array_column($list, 'claim_count'))}</b>人次已领取</span>
+      </div>
+    </section>
+
+    {if !empty($list)}
+    <!-- 按领取方式筛选 -->
+    <div class="fz-tabs" role="tablist">
+      <button type="button" class="on" data-type="0">全部</button>
+      <button type="button" data-type="1">直接领取</button>
+      <button type="button" data-type="2">关注公众号</button>
+      <button type="button" data-type="3">购买专享</button>
+      <button type="button" data-type="4">老用户回馈</button>
+    </div>
+
+    <div class="fz-grid">
+      {foreach $list as $f}
+      <article class="fz-card" id="f{$f.id}" data-type="{$f.claim_type}">
+        <div class="fz-thumb">
+          <img src="{$f.cover ?: '/static/img/material-fallback-v2.jpg'}" alt="{$f.title}" loading="lazy">
+        </div>
+        <div class="fz-body">
+          <h3>{$f.title}</h3>
+          <div class="fz-meta">
+            <span class="fz-tag t{$f.claim_type}">{$f.claim_type == 1 ? '直接领取' : ($f.claim_type == 2 ? '关注公众号' : ($f.claim_type == 3 ? '购买专享' : '老用户回馈'))}</span>
+            {if in_array($f.id, $claimedIds)}<span class="fz-owned"><i class="fa-solid fa-circle-check"></i> 已领取</span>{/if}
+          </div>
+          <p class="fz-cond"><i class="fa-solid {$f.claim_type == 2 ? 'fa-qrcode' : ($f.claim_type == 3 ? 'fa-bag-shopping' : ($f.claim_type == 4 ? 'fa-receipt' : 'fa-bolt'))}"></i>{$f.condition_text}</p>
+          <div class="fz-foot">
+            <span class="fz-count">{$f.claim_count > 0 ? $f.claim_count . ' 人已领' : '新上架'}</span>
+            {if $f.claim_type == 2}
+            <button type="button" class="fz-btn" data-id="{$f.id}" data-mp='{:json_encode(["name"=>$f.mp_name,"qr"=>$f.mp_qr,"kw"=>$f.mp_keyword], JSON_UNESCAPED_UNICODE)}' onclick="fzMp(this)">去领取</button>
+            {elseif in_array($f.id, $claimedIds)}
+            <button type="button" class="fz-btn ghost" onclick="fzClaim({$f.id})">查看资料</button>
+            {else}
+            <button type="button" class="fz-btn" onclick="fzClaim({$f.id})">免费领取</button>
+            {/if}
+          </div>
+        </div>
+      </article>
+      {/foreach}
+    </div>
+    {else}
+    <div class="fz-empty"><i class="fa-solid fa-gift"></i><p>免费资料正在准备中，敬请期待</p></div>
+    {/if}
+  </div>
+</div>
+
+<!-- 弹窗：领到的资料 / 公众号领取 -->
+<div class="fz-mask" id="fzMask" hidden>
+  <div class="fz-modal" role="dialog" aria-modal="true">
+    <button type="button" class="fz-close" onclick="fzClose()" aria-label="关闭"><i class="fa-solid fa-xmark"></i></button>
+    <div id="fzModalBody"></div>
+  </div>
+</div>
+{/block}
+
+{block name="js"}
+<script>
+function fzEsc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
+function fzOpen(html) { document.getElementById('fzModalBody').innerHTML = html; document.getElementById('fzMask').hidden = false; }
+function fzClose() { document.getElementById('fzMask').hidden = true; }
+document.getElementById('fzMask').addEventListener('click', e => { if (e.target.id === 'fzMask') fzClose(); });
+function fzCopy(text, btn) { navigator.clipboard.writeText(text).then(() => { if (btn) { btn.textContent = '已复制'; } BizHelper.toast('已复制'); }); }
+
+// 筛选
+document.querySelectorAll('.fz-tabs button').forEach(b => b.addEventListener('click', () => {
+  document.querySelectorAll('.fz-tabs button').forEach(x => x.classList.toggle('on', x === b));
+  const t = b.dataset.type;
+  document.querySelectorAll('.fz-card').forEach(c => { c.hidden = t !== '0' && c.dataset.type !== t; });
+}));
+
+// 领取 / 查看：后端按规则判断，能领就返回资料，不能领返回原因
+async function fzClaim(id) {
+  if (!window._isLogged) return window.openLogin('login', () => fzClaim(id));
+  const r = await BizHelper.request('/free/claim', { id });
+  if (r.code === 401) return window.openLogin('login', () => fzClaim(id));
+  if (r.code !== 0) return BizHelper.toast(r.msg, 'warning');
+  const d = r.data;
+  let rows = '';
+  if (d.url) {
+    const href = /^https?:\/\//i.test(d.url) ? d.url : '';
+    rows += `<div class="fz-row"><span>网盘链接</span><a ${href ? `href="${fzEsc(href)}" target="_blank" rel="nofollow noopener"` : ''}>${fzEsc(d.url)}</a><button type="button" onclick="fzCopy(${fzEsc(JSON.stringify(d.url))}, this)">复制</button></div>`;
+    if (d.code) rows += `<div class="fz-row"><span>提取码</span><b class="fz-code">${fzEsc(d.code)}</b><button type="button" onclick="fzCopy(${fzEsc(JSON.stringify(d.code))}, this)">复制</button></div>`;
+  }
+  if (d.file_url) rows += `<a class="fz-download" href="${fzEsc(d.file_url)}"><i class="fa-solid fa-download"></i> 下载 ${fzEsc(d.file_name)}</a>`;
+  fzOpen(`<div class="fz-ok"><i class="fa-solid fa-circle-check"></i></div><h3 class="fz-mt">领取成功</h3><p class="fz-msub">资料已保存，随时回到这里都能再看</p>${rows}`);
+  document.getElementById('fzMask').dataset.reload = '1';
+}
+
+// 公众号方式：二维码 + 三步 + 关键词；领到后可以点「我已领取」标记
+function fzMp(btn) {
+  const m = JSON.parse(btn.dataset.mp || '{}');
+  fzOpen(`<h3 class="fz-mt"><i class="fa-brands fa-weixin"></i> 关注公众号领取</h3>
+    <div class="fz-mp">
+      <div class="fz-qr">${m.qr ? `<img src="${fzEsc(m.qr)}" alt="公众号二维码">` : '<i class="fa-solid fa-qrcode"></i>'}<span>微信扫一扫</span></div>
+      <ol class="fz-steps">
+        <li><b>1</b>扫码关注「${fzEsc(m.name || '公众号')}」</li>
+        <li><b>2</b>在公众号里发送关键词</li>
+        <li><b>3</b>公众号自动回复领取方式</li>
+      </ol>
+    </div>
+    <div class="fz-kw"><span>关键词</span><b>${fzEsc(m.kw)}</b><button type="button" onclick="fzCopy(${fzEsc(JSON.stringify(m.kw || ''))}, this)">复制</button></div>
+    <button type="button" class="fz-done" onclick="fzMark(${Number(btn.dataset.id)})">我已领取</button>`);
+}
+async function fzMark(id) {
+  if (!window._isLogged) return window.openLogin('login', () => fzMark(id));
+  const r = await BizHelper.request('/free/claim', { id });
+  if (r.code !== 0) return BizHelper.toast(r.msg, 'warning');
+  BizHelper.toast('已标记为领取');
+  fzClose(); location.reload();
+}
+document.addEventListener('keydown', e => { if (e.key === 'Escape') fzClose(); });
+// 领完关掉弹窗时刷新，按钮变成「查看资料」
+new MutationObserver(() => { const m = document.getElementById('fzMask'); if (m.hidden && m.dataset.reload) location.reload(); })
+  .observe(document.getElementById('fzMask'), { attributes: true, attributeFilter: ['hidden'] });
+</script>
+{/block}

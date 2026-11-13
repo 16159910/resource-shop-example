@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>{$pageTitle|default='管理后台'} - {$siteConfig.site_name|default='资料小铺'}</title>
+<link rel="stylesheet" href="/static/lib/fontawesome/css/all.min.css">
+<link rel="stylesheet" href="/static/css/admin.css?v=20261016">
+<link rel="stylesheet" href="/static/css/share-admin.css?v={:filemtime(public_path() . 'static/css/share-admin.css')}">
+{block name="css"}{/block}
+</head>
+<body>
+<div class="admin-layout">
+  <!-- 侧边栏 -->
+  <aside class="admin-sidebar">
+    <div class="sidebar-logo">
+      {if !empty($siteConfig.site_logo)}
+      <img src="{$siteConfig.site_logo}" alt="logo">
+      {else}
+      <i class="fa-solid fa-box-archive" style="color:#1677ff;font-size:22px;margin-right:10px;"></i>
+      {/if}
+      <span>{$siteConfig.site_name|default='资料小铺'}</span>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-group">
+        <div class="nav-group-title">概览</div>
+        <a href="/admin" class="nav-item {$currentMenu=='dashboard'?'active':''}">
+          <i class="fa-solid fa-gauge-high"></i> 仪表板
+        </a>
+      </div>
+      <div class="nav-group">
+        <div class="nav-group-title">内容管理</div>
+        <a href="/admin/material" class="nav-item {$currentMenu=='material'?'active':''}">
+          <i class="fa-solid fa-book-open"></i> 资料管理
+        </a>
+        <a href="/admin/freebie" class="nav-item {$currentMenu=='freebie'?'active':''}">
+          <i class="fa-solid fa-gift"></i> 免费资料
+        </a>
+        <a href="/admin/card" class="nav-item {$currentMenu=='card'?'active':''}">
+          <i class="fa-solid fa-key"></i> 卡密仓库
+        </a>
+        <a href="/admin/category" class="nav-item {$currentMenu=='category'?'active':''}">
+          <i class="fa-solid fa-folder-tree"></i> 分类管理
+        </a>
+      </div>
+      <div class="nav-group">
+        <div class="nav-group-title">交易</div>
+        <a href="/admin/order" class="nav-item {$currentMenu=='order'?'active':''}">
+          <i class="fa-solid fa-receipt"></i> 订单管理
+        </a>
+        <a href="/admin/user" class="nav-item {$currentMenu=='user'?'active':''}">
+          <i class="fa-solid fa-users"></i> 用户管理
+        </a>
+      </div>
+
+
+      <div class="nav-group">
+        <div class="nav-group-title">服务</div>
+        <a href="/admin/config/question" class="nav-item {$currentMenu=='question'?'active':''}">
+          <i class="fa-regular fa-comments"></i> 用户提问
+        </a>
+      </div>
+      <div class="nav-group">
+        <div class="nav-group-title">设置</div>
+        <a href="/admin/config/site" class="nav-item {$currentMenu=='config_site'?'active':''}">
+          <i class="fa-solid fa-sliders"></i> 网站配置
+        </a>
+        <a href="/admin/config/payment" class="nav-item {$currentMenu=='config_payment'?'active':''}">
+          <i class="fa-solid fa-credit-card"></i> 支付设置
+        </a>
+      </div>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="admin-name">{$adminInfo.nickname|default='管理员'}</div>
+      <div class="admin-role">超级管理员</div>
+      <a href="javascript:;" onclick="AdminPwd.open()"><i class="fa-solid fa-key"></i> 修改密码</a>
+      <a href="/admin/logout"><i class="fa-solid fa-right-from-bracket"></i> 退出登录</a>
+    </div>
+  </aside>
+
+  <!-- 主内容区 -->
+  <main class="admin-main">
+    <header class="admin-header">
+      <!-- 汉堡按钮：只在窄屏出现，用来拉出侧边菜单 -->
+      <button type="button" class="admin-menu-btn" onclick="AdminNav.open()" aria-label="打开菜单">
+        <i class="fa-solid fa-bars"></i>
+      </button>
+      <div class="header-title">{$pageTitle|default='管理后台'}</div>
+      <div class="header-breadcrumb">
+        {if !empty($breadcrumb)}
+          {foreach $breadcrumb as $key => $bc}
+            {if $bc['url']}<a href="{$bc.url}">{$bc.name}</a>{else}{$bc.name}{/if}
+            {if $key < count($breadcrumb)-1}<span>/</span>{/if}
+          {/foreach}
+        {/if}
+      </div>
+    </header>
+    <div class="admin-content">
+      {block name="content"}{/block}
+    </div>
+  </main>
+
+  <!-- 抽屉遮罩：点一下关掉菜单 -->
+  <div class="admin-nav-mask" onclick="AdminNav.close()"></div>
+</div>
+
+<script src="/static/lib/vue/vue.global.prod.min.js"></script>
+<script src="/static/lib/sweetalert2/sweetalert2.all.min.js"></script>
+<script src="/static/js/biz-select.js?v=20261016"></script>
+<script src="/static/js/biz-date.js?v=20260913a"></script>
+<script>
+// 统一创建后台 Vue 应用：注册全局组件 + 挂载 BizHelper 到模板作用域
+window._createAdminApp = function(options) {
+  const app = Vue.createApp(options);
+  app.config.globalProperties.BizHelper = BizHelper;
+  app.component('biz-select', window.BizSelect);
+  app.component('biz-date', window.BizDate);
+  return app;
+};
+</script>
+<link rel="stylesheet" href="/static/lib/sweetalert2/sweetalert2.min.css">
+<script>
+window.CSRF_TOKEN = '{:session("__token__") ?: token()}';
+const BizHelper = {
+  confirm(msg, opts = {}) {
+    return Swal.fire({
+      title: msg,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#1677ff',
+      cancelButtonColor: '#aaa',
+      confirmButtonText: opts.confirm || '确认',
+      cancelButtonText: '取消',
+      ...opts
+    }).then(r => r.isConfirmed);
+  },
+  toast(msg, icon = 'success') {
+    Swal.fire({ toast: true, position: 'top-end', icon, title: msg, showConfirmButton: false, timer: 2000, timerProgressBar: true });
+  },
+  async request(url, data = null, method = 'POST') {
+    const opts = { method, headers: { 'X-CSRF-TOKEN': window.CSRF_TOKEN || '' } };
+    if (data !== null) {
+      opts.headers['Content-Type'] = 'application/json';
+      opts.body = JSON.stringify(data);
+    }
+    const res = await fetch(url, opts);
+    return res.json();
+  },
+  async get(url) {
+    const res = await fetch(url);
+    return res.json();
+  },
+  formatSize(bytes) {
+    if (!bytes) return '0 B';
+    const k = 1024, sizes = ['B','KB','MB','GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return (bytes / Math.pow(k, i)).toFixed(1) + ' ' + sizes[i];
+  },
+  formatTime(ts) {
+    if (!ts) return '-';
+    const d = isNaN(ts) ? new Date(String(ts).replace(/-/g, '/')) : new Date(Number(ts) * 1000);
+    if (isNaN(d.getTime())) return '-';
+    return d.toLocaleDateString('zh-CN') + ' ' + d.toLocaleTimeString('zh-CN', {hour:'2-digit',minute:'2-digit'});
+  },
+  /**
+   * 订单的支付方式。
+   *
+   * 小程序内卖虚拟商品只能走虚拟支付（pay_type=3），结算方由平台按设备路由：
+   * iOS 是 Apple 支付，Android / 鸿蒙 / Windows 是微信支付。发货推送里区分不出来，
+   * 靠下单时小程序报上来的 pay_client 认；改版之前的老订单没有这个字段。
+   *
+   * @returns {{text: string, badge: string, hint: string}}
+   */
+  payMethod(item) {
+    switch (Number(item.pay_type)) {
+      case 1: return { text: '支付宝',   badge: 'badge-primary', hint: '网站支付宝' };
+      case 2: return { text: '微信支付', badge: 'badge-success', hint: '微信支付 JSAPI' };
+      case 3:
+        if (item.pay_client === 'ios') return { text: 'Apple 支付', badge: 'badge-warning', hint: '小程序虚拟支付，iOS 由 Apple 结算' };
+        if (item.pay_client)           return { text: '微信支付',   badge: 'badge-success', hint: '小程序虚拟支付，' + item.pay_client + ' 由微信结算' };
+        return { text: '小程序支付', badge: 'badge-success', hint: '小程序虚拟支付，未记录下单设备' };
+      default: return { text: '-', badge: 'badge-default', hint: '尚未支付' };
+    }
+  }
+};
+</script>
+
+<!-- 修改登录密码：挂在公共布局里，后台任意页面都能开 -->
+<div class="modal-mask" id="pwdMask" style="display:none;">
+  <div class="modal-box" style="width:420px;">
+    <div class="modal-header">
+      <h4><i class="fa-solid fa-key" style="color:var(--primary);margin-right:6px;"></i>修改登录密码</h4>
+      <button class="modal-close" onclick="AdminPwd.close()"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <div class="modal-body">
+      <div class="form-item">
+        <div class="form-item-label required">当前密码</div>
+        <input class="form-input" id="pwdOld" data-pwd autocomplete="off">
+      </div>
+      <div class="form-item">
+        <div class="form-item-label required">新密码</div>
+        <input class="form-input" id="pwdNew" data-pwd autocomplete="off" placeholder="至少 8 位">
+      </div>
+      <div class="form-item">
+        <div class="form-item-label required">确认新密码</div>
+        <input class="form-input" id="pwdConfirm" data-pwd autocomplete="off">
+        <div class="form-hint">改完会退出登录，需要用新密码重新登入。</div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-default" onclick="AdminPwd.close()">取消</button>
+      <button class="btn-primary" id="pwdSubmit" onclick="AdminPwd.submit()">保存</button>
+    </div>
+  </div>
+</div>
+<script>
+/**
+ * 手机上表格变卡片时，每个单元格左边要显示它属于哪一列。
+ *
+ * 做法是把表头文字写进单元格的 data-label，CSS 再用 ::before 取出来。
+ * 这样 14 个页面的表格 HTML 一行都不用改。
+ * 表格是 Vue 异步渲染的，所以用 MutationObserver 盯着 tbody 变化补标签。
+ */
+(function () {
+  function labelCells(table) {
+    var heads = [].map.call(table.querySelectorAll('thead th'), function (th) {
+      // 表头里可能有图标，只取纯文字
+      return (th.textContent || '').trim();
+    });
+    if (!heads.length) return;
+
+    [].forEach.call(table.querySelectorAll('tbody tr'), function (tr) {
+      // 展开的明细行用了 colspan，跟表头列对不上，跳过
+      if (tr.children.length !== heads.length) return;
+      [].forEach.call(tr.children, function (td, i) {
+        if (heads[i] && td.getAttribute('data-label') !== heads[i]) {
+          td.setAttribute('data-label', heads[i]);
+        }
+      });
+    });
+  }
+
+  function labelAll() {
+    [].forEach.call(document.querySelectorAll('.biz-table'), labelCells);
+  }
+
+  var timer = null;
+  function schedule() {
+    clearTimeout(timer);
+    timer = setTimeout(labelAll, 60);   // 合并连续的 DOM 变更，避免每行都触发一次
+  }
+
+  window.addEventListener('DOMContentLoaded', function () {
+    labelAll();
+    // Vue 渲染完列表、翻页、筛选都会改 DOM，盯着补标签
+    new MutationObserver(schedule).observe(document.body, { childList: true, subtree: true });
+  });
+})();
+
+/**
+ * 窄屏下的侧边菜单抽屉。
+ * 宽屏时这些 class 没有任何样式绑定，等于不生效。
+ */
+const AdminNav = {
+  open()  { document.body.classList.add('nav-open'); },
+  close() { document.body.classList.remove('nav-open'); }
+};
+// 点菜单项跳转前先收起，避免返回时还挂着遮罩
+document.addEventListener('click', function (e) {
+  if (e.target.closest && e.target.closest('.sidebar-nav a')) AdminNav.close();
+});
+// 转成宽屏时把状态清掉，不然遮罩会留在那儿
+window.addEventListener('resize', function () {
+  if (window.innerWidth > 900) AdminNav.close();
+});
+
+/**
+ * 记住左侧菜单的滚动位置。
+ *
+ * 后台是多页应用，点菜单就是整页跳转，侧边栏会重新渲染回顶部——
+ * 菜单一多，每次点完都得重新滚下来找位置。这里把滚动量存在
+ * sessionStorage（只在当前标签页有效，关掉即清），新页面加载时还原。
+ */
+(function () {
+  var KEY = 'admin_nav_scroll';
+  var nav = document.querySelector('.sidebar-nav');
+  if (!nav) return;
+
+  // 还原：先按存的位置，没有就把当前高亮项滚到可见处
+  var saved = sessionStorage.getItem(KEY);
+  if (saved !== null) {
+    nav.scrollTop = parseInt(saved, 10) || 0;
+  }
+  var active = nav.querySelector('.nav-item.active');
+  if (active) {
+    var top = active.offsetTop;
+    var bottom = top + active.offsetHeight;
+    // 还原后高亮项仍不在视野里（比如直接输网址进来），再居中滚过去
+    if (top < nav.scrollTop || bottom > nav.scrollTop + nav.clientHeight) {
+      nav.scrollTop = top - nav.clientHeight / 2 + active.offsetHeight / 2;
+    }
+  }
+
+  // 记录：点菜单跳转前存一次，正常离开页面也存一次
+  nav.addEventListener('click', function () {
+    sessionStorage.setItem(KEY, String(nav.scrollTop));
+  });
+  window.addEventListener('pagehide', function () {
+    sessionStorage.setItem(KEY, String(nav.scrollTop));
+  });
+})();
+
+/**
+ * 兜底：清掉浏览器硬塞进搜索框的账号。
+ *
+ * Chrome 的自动填充不走 input 事件，Vue 那边的 data 还是空的——
+ * 也就是说框里显示 admin、实际搜的却是空字符串，不只是丑，是真会搜错。
+ * :-webkit-autofill 这个伪类只有被自动填充的元素才会命中，据此识别并清空。
+ */
+(function () {
+  function clearAutofill() {
+    document.querySelectorAll('input.search-input').forEach(function (el) {
+      try {
+        if (el.matches(':-webkit-autofill') || el.matches(':autofill')) {
+          el.value = '';
+        }
+      } catch (e) {
+        // 老浏览器不认这些伪类，忽略即可
+      }
+    });
+  }
+  // 自动填充是异步发生的，首屏之后再补查几次
+  window.addEventListener('load', function () {
+    clearAutofill();
+    setTimeout(clearAutofill, 120);
+    setTimeout(clearAutofill, 500);
+  });
+})();
+
+const AdminPwd = {
+  open() {
+    // 打开时才变成密码框，关闭再还原，这样页面静置时 DOM 里没有 password 元素
+    document.querySelectorAll('[data-pwd]').forEach(el => { el.value = ''; el.type = 'password'; });
+    document.getElementById('pwdMask').style.display = 'flex';
+    document.getElementById('pwdOld').focus();
+  },
+  close() {
+    document.getElementById('pwdMask').style.display = 'none';
+    document.querySelectorAll('[data-pwd]').forEach(el => { el.value = ''; el.type = 'text'; });
+  },
+  async submit() {
+    const old = document.getElementById('pwdOld').value;
+    const pwd = document.getElementById('pwdNew').value;
+    const cfm = document.getElementById('pwdConfirm').value;
+    if (!old || !pwd) return BizHelper.toast('请填写当前密码和新密码', 'warning');
+    if (pwd.length < 8) return BizHelper.toast('新密码不能少于 8 位', 'warning');
+    if (pwd !== cfm) return BizHelper.toast('两次输入的新密码不一致', 'warning');
+
+    const btn = document.getElementById('pwdSubmit');
+    btn.disabled = true;
+    const r = await BizHelper.request('/admin/password', { old_password: old, password: pwd, confirm: cfm });
+    btn.disabled = false;
+    if (r.code === 0) {
+      BizHelper.toast(r.msg || '密码已修改，请重新登录');
+      setTimeout(() => location.href = '/admin/login', 1200);
+    } else {
+      BizHelper.toast(r.msg, 'error');
+    }
+  }
+};
+</script>
+{block name="js"}{/block}
+</body>
+</html>

@@ -1,0 +1,60 @@
+{extend name="layout/base" /}
+{block name="content"}
+<div class="home-container" style="padding:40px 16px 60px;">
+  <div style="max-width:760px;margin:0 auto;">
+    <h1 style="font-size:24px;font-weight:700;margin-bottom:8px;">隐私政策</h1>
+    <p style="color:var(--text-muted);font-size:13px;margin-bottom:32px;">最后更新：{:date('Y年m月d日')}</p>
+
+    <div class="policy-body">
+      <h2>一、我们收集的信息</h2>
+      <p>为向您提供正常的购买和下载服务，我们会收集以下个人信息：</p>
+      <ul>
+        <li><strong>账号信息</strong>：注册时您提供的手机号或电子邮箱地址、昵称。</li>
+        <li><strong>交易信息</strong>：您的订单记录、支付记录（支付金额、支付时间、第三方交易流水号）。</li>
+        <li><strong>设备信息</strong>：登录 IP、浏览器类型，用于安全防护。</li>
+      </ul>
+      <p>我们<strong>不会</strong>收集您的身份证号、银行卡号等敏感金融信息。支付通过第三方支付平台（如支付宝）完成，我们不接触您的支付密码和完整卡号。</p>
+
+      <h2>二、信息的使用</h2>
+      <ul>
+        <li>向您提供资料购买和下载服务；</li>
+        <li>发送订单通知（如支付成功提醒）；</li>
+        <li>分析平台使用情况，改进服务质量；</li>
+        <li>依法配合监管机构的信息核查。</li>
+      </ul>
+      <p>我们不会将您的个人信息出售给任何第三方。</p>
+
+      <h2>三、信息的存储与保护</h2>
+      <p>您的个人信息存储在中华人民共和国境内的服务器上。我们采取以下措施保护您的信息：</p>
+      <ul>
+        <li>密码经过 bcrypt 加密存储，我们无法还原您的明文密码；</li>
+        <li>网站全程使用 HTTPS 加密传输；</li>
+        <li>定期备份数据库，防止数据丢失。</li>
+      </ul>
+
+      <h2>四、Cookie 的使用</h2>
+      <p>我们使用 Cookie 维持您的登录状态，不用于广告追踪。关闭 Cookie 可能导致您无法正常登录和使用服务。</p>
+
+      <h2>五、您的权利</h2>
+      <p>您可以随时：</p>
+      <ul>
+        <li>在「个人资料」页面修改您的昵称和联系方式；</li>
+        <li>通过联系客服申请注销账号，注销后我们将删除您的个人识别信息。</li>
+      </ul>
+
+      <h2>六、联系我们</h2>
+      <p>如对本隐私政策有任何疑问，请通过网站客服微信与我们联系。</p>
+    </div>
+  </div>
+</div>
+{/block}
+
+{block name="css"}
+<style>
+.policy-body h2 { font-size:16px; font-weight:700; margin:24px 0 10px; color:var(--text); }
+.policy-body p  { font-size:14px; line-height:1.8; color:var(--text-muted); margin-bottom:10px; }
+.policy-body ul { padding-left:20px; margin-bottom:10px; }
+.policy-body li { font-size:14px; line-height:1.8; color:var(--text-muted); }
+.policy-body strong { color:var(--text); }
+</style>
+{/block}

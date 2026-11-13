@@ -1,0 +1,514 @@
+/* Share edition: resource account and payment layouts. */
+
+.pay-wrap {
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+.pay-card {
+  background: var(--card-bg, #fff);
+  border-radius: 16px;
+  box-shadow: 0 2px 12px rgba(45,80,155,.06);
+  padding: 24px;
+  margin-bottom: 16px;
+}
+
+.pay-card-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text, #222);
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+
+.pay-order-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.pay-cover {
+  width: 64px;
+  height: 88px;
+  object-fit: cover;
+  border-radius: 6px;
+  flex-shrink: 0;
+}
+
+.pay-order-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.pay-order-name {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text, #222);
+  line-height: 1.5;
+  margin-bottom: 6px;
+}
+
+.pay-order-no {
+  font-size: 12px;
+  color: var(--text-muted, #999);
+}
+
+.pay-order-amount {
+  font-size: 26px;
+  font-weight: 700;
+  color: var(--primary, #ff6b35);
+  flex-shrink: 0;
+}
+
+
+.pay-channel-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 24px;
+}
+
+.pay-channel-item {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 16px 20px;
+  border: 2px solid var(--border, #eee);
+  border-radius: 10px;
+  cursor: pointer;
+  transition: border-color .15s, background .15s;
+  position: relative;
+}
+
+.pay-channel-item:hover {
+  border-color: #c8c8c8;
+}
+
+.pay-channel-item.selected {
+  border-color: var(--primary, #ff6b35);
+  background: #fff8f5;
+}
+
+.pay-channel-item.alipay.selected {
+  border-color: #1677FF;
+  background: #f0f5ff;
+}
+
+.pay-channel-item.wechat.selected {
+  border-color: #07c160;
+  background: #f0fff4;
+}
+
+.pay-channel-name {
+  font-size: 16px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.pay-channel-check {
+  margin-left: auto;
+  color: var(--primary, #ff6b35);
+  font-size: 18px;
+  opacity: 0;
+  transition: opacity .15s;
+}
+
+.pay-channel-item.alipay .pay-channel-check { color: #1677FF; }
+.pay-channel-item.wechat .pay-channel-check { color: #07c160; }
+
+.pay-channel-item.selected .pay-channel-check {
+  opacity: 1;
+}
+
+
+.pay-btn {
+  width: 100%;
+  height: 52px;
+  background: var(--primary, #ff6b35);
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  font-size: 17px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: opacity .15s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.pay-btn:hover { opacity: .9; }
+.pay-btn:disabled { opacity: .6; cursor: not-allowed; }
+
+.pay-tips {
+  text-align: center;
+  font-size: 13px;
+  color: var(--text-muted, #999);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+
+.pay-result-wrap {
+  text-align: center;
+  max-width: 480px;
+  margin: 0 auto;
+}
+
+.pay-result-icon {
+  font-size: 72px;
+  margin-bottom: 24px;
+}
+
+.pay-result-icon.success { color: #07c160; }
+.pay-result-icon.pending { color: #f59e0b; }
+
+.pay-result-title {
+  font-size: 26px;
+  font-weight: 700;
+  color: var(--text, #222);
+  margin-bottom: 10px;
+}
+
+.pay-result-sub {
+  font-size: 14px;
+  color: var(--text-muted, #999);
+  line-height: 1.7;
+  margin-bottom: 16px;
+}
+
+.pay-result-order {
+  font-size: 12px;
+  color: #bbb;
+  margin-bottom: 32px;
+}
+
+.pay-result-actions {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.pay-result-actions .btn-primary,
+.pay-result-actions .btn-default {
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 10px 18px;
+  margin: 0 !important;
+  border-radius: 8px;
+}
+.pay-pan-code {
+  flex-basis: 100%;
+  margin-top: 2px;
+  color: var(--text-muted, #999);
+  font-size: 13px;
+}
+.pay-pan-code b {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 3px 8px;
+  border-radius: 5px;
+  background: #f1faf5;
+  color: #08723a;
+  font-size: 14px;
+  letter-spacing: .08em;
+}
+
+@media (max-width: 640px) {
+  .pay-order-amount { font-size: 22px; }
+  .pay-btn { height: 48px; font-size: 16px; }
+}
+
+
+.pay-wechat-tip {
+  padding: 28px 20px;
+  text-align: center;
+  color: var(--text-muted);
+}
+.pay-wechat-tip .fa-weixin {
+  font-size: 44px;
+  color: #07c160;
+  margin-bottom: 14px;
+}
+.pay-wechat-tip-title {
+  font-size: 17px;
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 8px;
+}
+.pay-wechat-tip p {
+  font-size: 14px;
+  line-height: 1.7;
+  margin: 0 auto;
+  max-width: 22em;
+}
+
+
+.cashier {
+  max-width: 1140px;
+  margin: 0 auto;
+  padding: 24px 20px 60px;
+}
+.cashier-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+.cashier-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 19px;
+  font-weight: 600;
+  color: var(--text);
+}
+.cashier-brand i {
+  width: 30px;
+  height: 30px;
+  border-radius: 7px;
+  background: var(--primary);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 15px;
+}
+.cashier-orders {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--primary);
+  color: #fff;
+  border-radius: 999px;
+  padding: 9px 20px;
+  font-size: 14px;
+  text-decoration: none;
+}
+.cashier-orders:hover { filter: brightness(1.06); }
+
+.cashier-card {
+  background: #fff;
+  border-radius: 12px;
+  padding: 40px 24px 46px;
+  text-align: center;
+  box-shadow: 0 2px 14px rgba(24, 40, 72, .05);
+}
+.cashier-countdown {
+  font-size: 17px;
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 22px;
+}
+.cashier-countdown b {
+  color: var(--primary);
+  font-variant-numeric: tabular-nums;
+  margin: 0 2px;
+}
+.cashier-orderno {
+  display: inline-flex;
+  align-items: center;
+  gap: 18px;
+  background: var(--bg);
+  border-radius: 6px;
+  padding: 9px 16px;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+.cashier-orderno button {
+  border: 0;
+  background: none;
+  color: var(--primary);
+  font-size: 13px;
+  cursor: pointer;
+  padding: 0;
+}
+.cashier-goods {
+  margin-top: 16px;
+  font-size: 13px;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.cashier-goods-name { max-width: 30em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cashier-divider {
+  height: 1px;
+  background: var(--border);
+  margin: 22px auto 0;
+  max-width: 1040px;
+}
+.cashier-channel {
+  margin-top: 24px;
+  font-size: 14px;
+  color: var(--text);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+}
+.cashier-channel i { color: #07c160; font-size: 20px; }
+.cashier-qr {
+  display: flex;
+  justify-content: center;
+  margin: 18px auto 0;
+  width: 204px;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: #fff;
+}
+.cashier-qr img, .cashier-qr canvas { display: block; }
+.cashier-amount {
+  margin-top: 22px;
+  font-size: 15px;
+  color: var(--primary);
+}
+.cashier-amount b {
+  font-size: 30px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.cashier-status {
+  margin-top: 18px;
+  font-size: 13px;
+  color: var(--text-light);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+.cashier-status.done i { display: none; }
+
+@media (max-width: 600px) {
+  .cashier { padding: 16px 12px 40px; }
+  .cashier-card { padding: 28px 14px 32px; }
+  .cashier-countdown { font-size: 15px; }
+  .cashier-orderno { gap: 12px; font-size: 12px; }
+  .cashier-goods-name { max-width: 16em; }
+}
+
+
+.pay-goods-list {
+  margin: 26px auto 26px;
+  max-width: 520px;
+  text-align: left;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+  background: #fff;
+}
+.pay-goods-cap {
+  padding: 11px 18px;
+  background: #f4faf6;
+  border-bottom: 1px solid var(--border);
+  font-size: 13px;
+  color: #0b7a3d;
+}
+.pay-goods-cap i { margin-right: 5px; }
+
+.pay-goods-item {
+  padding: 15px 18px;
+  border-bottom: 1px solid var(--border);
+}
+.pay-goods-item:last-child { border-bottom: 0; }
+.pay-goods-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+  line-height: 1.6;
+  margin-bottom: 11px;
+}
+.pay-goods-get {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.pay-goods-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  height: 38px;
+  padding: 0 18px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: filter .15s;
+}
+.pay-goods-btn:hover { filter: brightness(.95); }
+.pay-goods-btn.pan  { background: #a65a3d; color: #fff; }
+.pay-goods-btn.file { background: var(--primary); color: #fff; }
+
+
+.pay-code-box {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 38px;
+  padding: 0 6px 0 12px;
+  border: 1px dashed #bfe3cd;
+  border-radius: 8px;
+  background: #f6fcf8;
+}
+.pay-code-label { font-size: 12px; color: var(--text-muted); }
+.pay-code-val {
+  font-size: 15px;
+  font-weight: 700;
+  color: #08723a;
+  letter-spacing: .1em;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+.pay-code-copy {
+  border: 0;
+  background: #e3f4ea;
+  color: #0b7a3d;
+  border-radius: 6px;
+  height: 26px;
+  padding: 0 10px;
+  font-size: 12px;
+  cursor: pointer;
+  transition: background .15s, color .15s;
+}
+.pay-code-copy:hover { background: #a65a3d; color: #fff; }
+.pay-code-copy.copied { background: #a65a3d; color: #fff; }
+
+
+.pay-result-actions .btn-primary {
+  background: var(--primary);
+  color: #fff;
+  border: 1px solid var(--primary);
+  text-decoration: none;
+  font-weight: 500;
+  transition: filter .15s;
+}
+.pay-result-actions .btn-primary:hover { filter: brightness(1.07); }
+.pay-result-actions .btn-default {
+  background: #fff;
+  color: var(--text-muted);
+  border: 1px solid var(--border);
+  text-decoration: none;
+  transition: color .15s, border-color .15s;
+}
+.pay-result-actions .btn-default:hover { color: var(--text); border-color: #c9d2dd; }
+
+@media (max-width: 600px) {
+  .pay-goods-list { margin: 20px auto; }
+  .pay-goods-get { gap: 10px; }
+  .pay-goods-btn, .pay-code-box { height: 40px; }
+}

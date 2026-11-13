@@ -1,0 +1,89 @@
+<?php
+use think\facade\Route;
+
+// 登录
+Route::get('/login', 'Login/index');
+Route::post('/login', 'Login/doLogin');
+Route::get('/logout', 'Login/logout');
+Route::post('/password', 'Login/changePassword');
+
+// 首页仪表板
+Route::get('/', 'Index/index');
+Route::get('/index', 'Index/index');
+
+// 分类管理
+Route::group('/category', function () {
+    Route::get('/', 'Category/index');
+    Route::get('/list', 'Category/list');
+    Route::post('/save', 'Category/save');
+    Route::post('/delete', 'Category/delete');
+});
+
+// 资料管理
+Route::group('/material', function () {
+    Route::get('/', 'Material/index');
+    Route::get('/list', 'Material/list');
+    Route::get('/create', 'Material/create');
+    Route::get('/edit', 'Material/edit');
+    Route::post('/save', 'Material/save');
+    Route::post('/status', 'Material/status');
+    Route::post('/upload/cover', 'Material/uploadCover');
+    Route::post('/upload/file', 'Material/uploadFile');
+    Route::post('/upload/preview', 'Material/uploadPreview');
+    Route::post('/delete/preview', 'Material/deletePreview');
+    Route::post('/delete', 'Material/delete');
+});
+
+// 免费资料（上传复用资料管理的 /material/upload/* 接口）
+Route::group('/freebie', function () {
+    Route::get('/', 'Freebie/index');
+    Route::get('/list', 'Freebie/list');
+    Route::post('/save', 'Freebie/save');
+    Route::post('/status', 'Freebie/status');
+    Route::post('/delete', 'Freebie/delete');
+});
+
+// 卡密仓库
+Route::group('/card', function () {
+    Route::get('/', 'Card/index');
+    Route::get('/products', 'Card/products');
+    Route::get('/list', 'Card/list');
+    Route::post('/import', 'Card/import');
+    Route::post('/delete', 'Card/delete');
+    Route::get('/export', 'Card/export');
+});
+
+// 订单管理
+Route::group('/order', function () {
+    Route::get('/', 'Order/index');
+    Route::get('/list', 'Order/list');
+});
+
+// 用户管理
+Route::group('/user', function () {
+    Route::get('/', 'User/index');
+    Route::get('/list', 'User/list');
+    Route::post('/save', 'User/save');
+    Route::post('/upload-avatar', 'User/uploadAvatar');
+    Route::post('/reset-password', 'User/resetPassword');
+    Route::post('/toggle-status', 'User/toggleStatus');
+});
+
+// 配置管理
+Route::group('/config', function () {
+    Route::get('/site', 'Config/site');
+    Route::post('/site', 'Config/saveSite');
+    Route::get('/payment', 'Config/payment');
+    Route::post('/payment', 'Config/savePayment');
+    Route::post('/upload-image', 'Config/uploadImage');
+
+    // 用户提问
+    Route::get('/question', 'Question/index');
+    Route::get('/question/list', 'Question/list');
+    Route::post('/question/reply', 'Question/reply');
+    Route::post('/question/delete', 'Question/delete');
+    Route::post('/upload-key', 'Config/uploadKey');
+});
+
+
+// 上线备忘

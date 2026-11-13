@@ -1,0 +1,131 @@
+{extend name="layout/base" /}
+
+{block name="content"}
+<div class="cashier">
+  <div class="cashier-head">
+    <div class="cashier-brand">
+      <i class="fa-solid fa-yen-sign"></i> 收银台
+    </div>
+    <a href="/user/orders" class="cashier-orders">
+      <i class="fa-solid fa-magnifying-glass"></i> 订单查询
+    </a>
+  </div>
+
+  <div class="cashier-card">
+    <div class="cashier-countdown">
+      请在<b id="countdown">--:--</b>内扫描二维码完成支付
+    </div>
+
+    <div class="cashier-orderno">
+      <span>订单号：{$order.order_no}</span>
+      <button type="button" id="copy-btn" onclick="copyOrderNo()">复制</button>
+    </div>
+
+    <div class="cashier-goods">
+      <span class="cashier-goods-name">{$order.title}</span>
+      <span class="cashier-goods-qty">x1</span>
+    </div>
+
+    <div class="cashier-divider"></div>
+
+    <div class="cashier-channel">
+      <i class="fa-brands fa-weixin"></i> 微信
+    </div>
+
+    <div class="cashier-qr" id="qrcode"></div>
+
+    <div class="cashier-amount">
+      <b>{$order.amount}</b> 元
+    </div>
+
+    <div class="cashier-status" id="status">
+      <i class="fa-solid fa-circle-notch fa-spin"></i>
+      <span id="status-text">正在检测付款状态</span>
+    </div>
+  </div>
+</div>
+{/block}
+
+{block name="css"}
+<link rel="stylesheet" href="/static/css/home/pay.css?v=20261015">
+{/block}
+
+{block name="js"}
+<script src="/static/lib/qrcode/qrcode.min.js"></script>
+<script>
+window.CODE_URL = {:json_encode($codeUrl, JSON_UNESCAPED_UNICODE|JSON_HEX_TAG|JSON_HEX_AMP)};
+window.ORDER_NO = {:json_encode($order['order_no'], JSON_UNESCAPED_UNICODE|JSON_HEX_TAG|JSON_HEX_AMP)};
+
+new QRCode(document.getElementById('qrcode'), {
+  text: window.CODE_URL,
+  width: 200,
+  height: 200,
+  correctLevel: QRCode.CorrectLevel.M
+});
+
+function copyOrderNo() {
+  const btn = document.getElementById('copy-btn');
+  const done = () => { btn.textContent = '已复制'; setTimeout(() => btn.textContent = '复制', 1500); };
+  const fallback = () => {
+    // http 环境或剪贴板权限被拒时退回 execCommand
+    const ta = document.createElement('textarea');
+    ta.value = window.ORDER_NO;
+    ta.style.position = 'fixed';
+    ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.select();
+    try { document.execCommand('copy'); done(); } catch (e) {}
+    document.body.removeChild(ta);
+  };
+  if (navigator.clipboard && window.isSecureContext) {
+    navigator.clipboard.writeText(window.ORDER_NO).then(done).catch(fallback);
+  } else {
+    fallback();
+  }
+}
+
+// 微信二维码有效期 2 小时，这里给 10 分钟，到点提示重新下单
+let left = 10 * 60;
+const cd = document.getElementById('countdown');
+const cdTimer = setInterval(() => {
+  if (--left <= 0) {
+    clearInterval(cdTimer);
+    clearInterval(pollTimer);
+    cd.textContent = '00:00';
+    setStatus('二维码已过期，请返回重新下单', false);
+    return;
+  }
+  cd.textContent = String(Math.floor(left / 60)).padStart(2, '0') + ':' + String(left % 60).padStart(2, '0');
+}, 1000);
+cd.textContent = '10:00';
+
+function setStatus(text, spinning) {
+  document.getElementById('status-text').textContent = text;
+  document.getElementById('status').classList.toggle('done', !spinning);
+}
+
+// 到账以异步回调为准，这里轮询自己的订单状态
+let tries = 0;
+const pollTimer = setInterval(async () => {
+  tries++;
+  try {
+    const res = await fetch('/pay/status?order_no=' + encodeURIComponent(window.ORDER_NO), {
+      headers: { 'X-Requested-With': 'XMLHttpRequest' }
+    });
+    const r = await res.json();
+    if (r.code === 0 && r.data.pay_status === 1) {
+      clearInterval(pollTimer);
+      clearInterval(cdTimer);
+      setStatus('支付成功，正在跳转…', false);
+      location.href = '/pay/return?out_trade_no=' + encodeURIComponent(window.ORDER_NO);
+    } else if (r.code === 0 && r.data.closed) {
+      clearInterval(pollTimer);
+      clearInterval(cdTimer);
+      setStatus('订单已关闭，请重新下单', false);
+    } else {
+      setStatus('正在检测付款状态 ' + tries + ' 次', true);
+    }
+  } catch (e) { /* 网络抖动忽略，下一轮继续 */ }
+}, 5000);
+</script>
+{/block}

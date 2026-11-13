@@ -1,0 +1,156 @@
+{extend name="layout/base" /}
+
+{block name="content"}
+<div id="app" v-cloak>
+  <div class="admin-card">
+    <div class="biz-toolbar">
+      <input class="search-input" type="search" name="q" autocomplete="off" v-model="params.keyword" placeholder="搜索问题内容" @keyup.enter="search">
+      <biz-select v-model="params.status" :options="statusOpts" @change="search"></biz-select>
+      <button class="btn-default" @click="reset" v-if="params.keyword || params.status !== ''">
+        <i class="fa-solid fa-rotate-left"></i> 重置
+      </button>
+      <div class="spacer"></div>
+      <span class="order-total" v-if="!loading">
+        共 [[ total ]] 条<span v-if="pending"> · 待回复 <b style="color:#d46b08">[[ pending ]]</b></span>
+      </span>
+    </div>
+
+    <div style="padding:0 20px 20px;">
+      <div v-if="loading" class="biz-loading"></div>
+      <template v-else>
+        <div v-if="!list.length" class="biz-empty">
+          <i class="fa-regular fa-comments"></i><p>还没有用户提问</p>
+        </div>
+
+        <div v-else class="qa-list">
+          <div class="qa-item" v-for="item in list" :key="item.id">
+            <div class="qa-head">
+              <span class="qa-status" :class="item.status == 1 ? 'replied' : 'pending'">
+                [[ item.status == 1 ? '已回复' : '待回复' ]]
+              </span>
+              <span class="qa-user">
+                <i class="fa-solid fa-user"></i>
+                [[ item.user ? (item.user.nickname || item.user.phone || item.user.email) : ('ID:' + item.user_id) ]]
+              </span>
+              <span class="qa-contact" v-if="item.contact">
+                <i class="fa-solid fa-address-book"></i> [[ item.contact ]]
+              </span>
+              <span class="qa-time">[[ BizHelper.formatTime(item.create_time) ]]</span>
+              <div class="spacer"></div>
+              <button class="biz-btn biz-btn-edit" @click="openReply(item)">
+                <i class="fa-solid fa-reply"></i> [[ item.status == 1 ? '修改回复' : '回复' ]]
+              </button>
+              <button class="biz-btn biz-btn-del" @click="del(item)">
+                <i class="fa-solid fa-trash-can"></i> 删除
+              </button>
+            </div>
+
+            <div class="qa-content">[[ item.content ]]</div>
+
+            <div class="qa-reply" v-if="item.status == 1">
+              <div class="qa-reply-head"><i class="fa-solid fa-headset"></i> 已回复</div>
+              <div class="qa-reply-body">[[ item.reply ]]</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="biz-pager" v-if="totalPages > 1">
+          <button class="pager-btn" @click="changePage(page-1)" :disabled="page<=1"><i class="fa-solid fa-chevron-left"></i></button>
+          <button v-for="p in pageList" :key="p" class="pager-btn" :class="p===page?'active':''" @click="changePage(p)">[[ p ]]</button>
+          <button class="pager-btn" @click="changePage(page+1)" :disabled="page>=totalPages"><i class="fa-solid fa-chevron-right"></i></button>
+        </div>
+      </template>
+    </div>
+  </div>
+
+  <!-- 回复弹窗 -->
+  <div class="modal-mask" v-if="modal.show">
+    <div class="modal-box" style="width:600px;">
+      <div class="modal-header">
+        回复用户提问
+        <button class="modal-close" @click="modal.show=false">×</button>
+      </div>
+      <div class="modal-body">
+        <div class="qa-quote">[[ modal.question ]]</div>
+        <div class="form-item">
+          <div class="form-item-label required">回复内容</div>
+          <textarea class="form-textarea" v-model="modal.reply" rows="6"
+                    placeholder="回复内容会显示在用户的「我有问题」页面"></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-default" @click="modal.show=false">取消</button>
+        <button class="btn-primary" @click="submitReply" :disabled="modal.saving">
+          <i class="fa-solid fa-spinner fa-spin" v-if="modal.saving"></i> 提交回复
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+{/block}
+
+{block name="js"}
+<script>
+_createAdminApp({
+  delimiters: ['[[',']]'],
+  data() {
+    return {
+      list: [], loading: true,
+      params: { keyword: '', status: '' },
+      page: 1, pageSize: 15, total: 0, pending: 0,
+      statusOpts: [
+        {value:'',  label:'全部状态'},
+        {value:'0', label:'待回复'},
+        {value:'1', label:'已回复'}
+      ],
+      modal: { show: false, id: 0, question: '', reply: '', saving: false }
+    };
+  },
+  computed: {
+    totalPages() { return Math.ceil(this.total / this.pageSize); },
+    pageList() {
+      const pages = [], t = this.totalPages, p = this.page;
+      for (let i = Math.max(1,p-2); i <= Math.min(t,p+2); i++) pages.push(i);
+      return pages;
+    }
+  },
+  mounted() { this.load(); },
+  methods: {
+    search() { this.page = 1; this.load(); },
+    reset() { this.params = { keyword:'', status:'' }; this.search(); },
+    async load() {
+      this.loading = true;
+      const q = new URLSearchParams({ ...this.params, page: this.page, page_size: this.pageSize });
+      const r = await BizHelper.get('/admin/question/list?' + q);
+      this.list = r.data?.list || [];
+      this.total = r.data?.total || 0;
+      this.pending = this.list.filter(i => i.status == 0).length;
+      this.loading = false;
+    },
+    changePage(p) { if (p<1||p>this.totalPages) return; this.page=p; this.load(); },
+    openReply(item) {
+      this.modal = { show: true, id: item.id, question: item.content, reply: item.reply || '', saving: false };
+    },
+    async submitReply() {
+      if (!this.modal.reply.trim()) return BizHelper.toast('请填写回复内容', 'warning');
+      this.modal.saving = true;
+      const r = await BizHelper.request('/admin/question/reply', { id: this.modal.id, reply: this.modal.reply });
+      this.modal.saving = false;
+      if (r.code === 0) {
+        this.modal.show = false;
+        BizHelper.toast('已回复');
+        this.load();
+      } else {
+        BizHelper.toast(r.msg, 'error');
+      }
+    },
+    async del(item) {
+      if (!await BizHelper.confirm('确定删除这条提问吗？')) return;
+      const r = await BizHelper.request('/admin/question/delete', { id: item.id });
+      if (r.code === 0) { BizHelper.toast('已删除'); this.load(); }
+      else BizHelper.toast(r.msg, 'error');
+    }
+  }
+}).mount('#app');
+</script>
+{/block}

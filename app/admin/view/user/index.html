@@ -1,0 +1,175 @@
+{extend name="layout/base" /}{block name="content"}
+<div id="users-app" v-cloak>
+  <div class="admin-share-intro">
+    <div>
+      <h2>用户管理</h2>
+      <p>管理账号、状态和联系方式。</p>
+    </div>
+    <button class="btn-primary" @click="edit()">＋ 新增用户</button>
+  </div>
+  <div class="admin-card">
+    <div class="table-toolbar">
+      <input
+        class="form-input search-input"
+        v-model="keyword"
+        placeholder="搜索昵称、手机号或邮箱"
+        @keyup.enter="search"
+      /><button class="btn-default" @click="search">搜索</button>
+    </div>
+    <div class="share-table-wrap">
+      <table class="biz-table">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>昵称</th>
+            <th>手机号</th>
+            <th>邮箱</th>
+            <th>状态</th>
+            <th>操作</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-for="user in list" :key="user.id">
+            <td>[[user.id]]</td>
+            <td>[[user.nickname]]</td>
+            <td>[[user.phone||'—']]</td>
+            <td>[[user.email||'—']]</td>
+            <td>[[user.status==1?'正常':'停用']]</td>
+            <td>
+              <button class="biz-btn" @click="edit(user)">编辑</button
+              ><button class="biz-btn" @click="toggle(user)">
+                [[user.status==1?'停用':'启用']]</button
+              ><button class="biz-btn" @click="reset(user)">重置密码</button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="share-pager">
+      <button :disabled="page<=1" @click="page--;load()">上一页</button
+      ><span>第 [[page]] 页 · 共 [[total]] 人</span
+      ><button :disabled="page*20>=total" @click="page++;load()">下一页</button>
+    </div>
+  </div>
+  <div class="share-modal" v-if="show">
+    <div>
+      <h3>[[form.id?'编辑用户':'新增用户']]</h3>
+      <form @submit.prevent="save">
+        <div class="share-editor">
+          <label v-if="!form.id"
+            >登录账号<input
+              class="form-input"
+              v-model="form.account"
+              placeholder="手机号或邮箱"
+              required /></label
+          ><label v-if="!form.id"
+            >初始密码<input
+              class="form-input"
+              v-model="form.password"
+              type="password"
+              minlength="6"
+              required /></label
+          ><label
+            >昵称<input class="form-input" v-model="form.nickname" /></label
+          ><label v-if="form.id"
+            >手机号<input class="form-input" v-model="form.phone" /></label
+          ><label v-if="form.id"
+            >邮箱<input class="form-input" v-model="form.email" type="email"
+          /></label>
+        </div>
+        <div class="share-editor-actions">
+          <button class="btn-primary">保存</button
+          ><button class="btn-default" type="button" @click="show=false">
+            取消
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{/block}{block name="js"}
+<script>
+  Vue.createApp({
+    delimiters: ["[[", "]]"],
+    data: () => ({
+      keyword: "",
+      page: 1,
+      total: 0,
+      list: [],
+      show: false,
+      form: {},
+    }),
+    mounted() {
+      this.load();
+    },
+    methods: {
+      async load() {
+        const r = await (
+          await fetch(
+            "/admin/user/list?" +
+              new URLSearchParams({
+                keyword: this.keyword,
+                page: this.page,
+                page_size: 20,
+              }),
+          )
+        ).json();
+        if (r.code === 0) {
+          this.list = r.data.list;
+          this.total = r.data.total;
+        } else BizHelper.toast(r.msg, "error");
+      },
+      search() {
+        this.page = 1;
+        this.load();
+      },
+      edit(user) {
+        this.form = user
+          ? {
+              id: user.id,
+              nickname: user.nickname,
+              phone: user.phone || "",
+              email: user.email || "",
+            }
+          : { id: 0, account: "", password: "", nickname: "" };
+        this.show = true;
+      },
+      async save() {
+        const r = await BizHelper.request("/admin/user/save", this.form);
+        if (r.code === 0) {
+          this.show = false;
+          this.load();
+          BizHelper.toast("已保存");
+        } else BizHelper.toast(r.msg, "error");
+      },
+      async toggle(user) {
+        const r = await BizHelper.request("/admin/user/toggle-status", {
+          id: user.id,
+          status: user.status == 1 ? 0 : 1,
+        });
+        if (r.code === 0) this.load();
+        else BizHelper.toast(r.msg, "error");
+      },
+      async reset(user) {
+        const r = await Swal.fire({
+          title: "设置新密码",
+          input: "password",
+          showCancelButton: true,
+          confirmButtonText: "保存",
+          cancelButtonText: "取消",
+          inputAttributes: { minlength: 6 },
+        });
+        if (!r.isConfirmed) return;
+        const saved = await BizHelper.request("/admin/user/reset-password", {
+          id: user.id,
+          password: r.value,
+        });
+        BizHelper.toast(
+          saved.code === 0 ? "密码已更新" : saved.msg,
+          saved.code === 0 ? "success" : "error",
+        );
+      },
+    },
+  }).mount("#users-app");
+</script>
+{/block}

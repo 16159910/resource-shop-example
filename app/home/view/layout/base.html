@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width,initial-scale=1,viewport-fit=cover"
+    />
+    <title>{$seo_title|default=$siteConfig.site_name}</title>
+    <meta
+      name="description"
+      content="{$seo_description|default=$siteConfig.site_description}"
+    />
+    <meta
+      name="keywords"
+      content="{$seo_keywords|default=$siteConfig.site_keywords}"
+    />
+    {if !empty($seo_canonical)}
+    <link rel="canonical" href="{$seo_canonical}" />
+    {/if}{if !empty($siteConfig.site_favicon)}
+    <link rel="icon" href="{$siteConfig.site_favicon}" />
+    {/if}
+    <link rel="stylesheet" href="/static/lib/fontawesome/css/all.min.css" />
+    <link
+      rel="stylesheet"
+      href="/static/css/home.css?v={:filemtime(public_path() . 'static/css/home.css')}"
+    />
+    <link rel="stylesheet" href="/static/lib/sweetalert2/sweetalert2.min.css" />
+    <link
+      rel="stylesheet"
+      href="/static/css/shop.css?v={:filemtime(public_path() . 'static/css/shop.css')}"
+    />
+    {block name="css"}{/block}
+  </head>
+  <body class="share-store">
+    <div class="store-announcement">
+      一份灵感，一次整理，让生活与工作更有条理。
+    </div>
+    <header class="store-header">
+      <a class="store-brand" href="/"
+        ><span class="brand-symbol"
+          ><i class="fa-solid fa-box-archive"></i></span
+        ><span
+          >{$siteConfig.site_name|default='资料小铺'}<small
+            >DIGITAL RESOURCES</small
+          ></span
+        ></a
+      >
+      <nav aria-label="主导航">
+        <a href="/">发现</a><a href="/list">全部资料</a
+        ><a href="/free">免费领取</a>
+      </nav>
+      <div class="store-actions">
+        <button
+          class="icon-button"
+          onclick="openCart()"
+          aria-label="打开购物车"
+        >
+          <i class="fa-solid fa-bag-shopping"></i
+          ><span data-cart-count>{$cartCount|default=0}</span></button
+        >{if !empty($loginUser)}<a class="account-link" href="/user/center"
+          ><i class="fa-regular fa-user"></i> {$loginUser.nickname}</a
+        >{else}<button class="account-link" onclick="openLogin()">
+          <i class="fa-regular fa-user"></i> 登录</button
+        >{/if}
+      </div>
+    </header>
+    <main class="store-main">{block name="content"}{/block}</main>
+    <footer class="store-footer">
+      <div>
+        <a class="footer-wordmark" href="/"
+          >{$siteConfig.site_name|default='资料小铺'}<span
+            >把好用的内容，留在手边。</span
+          ></a
+        >
+        <p>{$siteConfig.site_description|default=''}</p>
+      </div>
+      <div>
+        <a href="/list">浏览资料</a><a href="/user/center">我的资料</a
+        ><a href="/user/orders">订单记录</a
+        ><a href="/user/questions">问题反馈</a>
+      </div>
+      <div>
+        <a href="/terms">服务协议</a><a href="/privacy">隐私政策</a
+        ><small>{$siteConfig.site_footer|default='© 2026 资料小铺'}</small>
+      </div>
+    </footer>
+    <script src="/static/lib/vue/vue.global.prod.min.js"></script>
+    <script src="/static/lib/sweetalert2/sweetalert2.all.min.js"></script>
+    <script>
+      window.CSRF_TOKEN='{:session("__token__") ?: token()}';window._isLogged={:json_encode(!empty($loginUser))};window.IS_LOGGED=window._isLogged;window._cartCount={$cartCount|default=0};
+    </script>
+    <script src="/static/js/shop.js?v={:filemtime(public_path() . 'static/js/shop.js')}"></script>
+    {block name="js"}{/block}
+  </body>
+</html>

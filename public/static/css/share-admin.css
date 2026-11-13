@@ -1,0 +1,422 @@
+:root {
+  --primary: #b85b3d;
+  --primary-hover: #96472f;
+  --primary-light: #f5e7dc;
+  --bg: #f6f3ee;
+  --text: #40372f;
+  --border: #e7dfd5;
+}
+body {
+  background: #f6f3ee;
+  color: #40372f;
+}
+.admin-sidebar {
+  background: #fdfbf7;
+  border-right: 1px solid #e3d8ca;
+  box-shadow: none;
+}
+.sidebar-logo {
+  border-bottom: 1px solid #e6dccf;
+  color: #5a4331;
+  font-family: "Songti SC", serif;
+  letter-spacing: 1px;
+}
+.sidebar-logo i {
+  color: #b85b3d !important;
+}
+.sidebar-nav .nav-group-title {
+  color: #af9981;
+  font-size: 10px;
+  letter-spacing: 2px;
+}
+.sidebar-nav .nav-item {
+  color: #857563;
+  margin: 4px 12px;
+  border-radius: 6px;
+  font-size: 12px;
+}
+.sidebar-nav .nav-item.active {
+  color: #a24d32;
+  background: #f0dfcd;
+  border: 0;
+}
+.sidebar-nav .nav-item.active:before {
+  display: none;
+}
+.sidebar-nav .nav-item:hover {
+  background: #f5ebdf;
+  color: #9d4a31;
+}
+.admin-header {
+  background: #fdfbf7;
+  border-bottom: 1px solid #e7dfd5;
+  box-shadow: none;
+}
+.admin-content {
+  padding: 28px;
+}
+.admin-card {
+  border: 1px solid #e7dfd5;
+  border-radius: 9px;
+  box-shadow: none;
+}
+.btn-primary,
+.biz-btn-primary {
+  background: #b85b3d !important;
+  border-color: #b85b3d !important;
+}
+.btn-primary:hover {
+  background: #96472f !important;
+}
+.biz-table thead th {
+  background: #f5eee5;
+  color: #8b755f;
+  border-color: #e9ddce;
+  font-size: 11px;
+}
+.biz-table td {
+  border-color: #eee5db;
+}
+.badge-primary {
+  background: #f4e5d7 !important;
+  color: #a05c38 !important;
+}
+.form-input:focus {
+  border-color: #c18a65 !important;
+  box-shadow: 0 0 0 3px #b85b3d12 !important;
+}
+.admin-share-stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 18px;
+  margin-bottom: 24px;
+}
+.admin-share-stats > div {
+  border: 1px solid #e5d9ca;
+  background: #fffdf9;
+  border-radius: 8px;
+  padding: 22px;
+}
+.admin-share-stats span {
+  display: block;
+  color: #a18b73;
+  font-size: 11px;
+}
+.admin-share-stats strong {
+  font-size: 30px;
+  font-weight: 550;
+  color: #755039;
+  display: block;
+  margin-top: 10px;
+}
+.admin-share-intro {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+}
+.admin-share-intro h2 {
+  font-size: 26px;
+  font-weight: 550;
+}
+.admin-share-intro p {
+  font-size: 12px;
+  color: #a18b73;
+  margin-top: 8px;
+}
+.admin-share-grid {
+  display: grid;
+  grid-template-columns: 1.2fr 1fr;
+  gap: 24px;
+}
+.share-panel {
+  background: #fffdf9;
+  border: 1px solid #e7dfd5;
+  border-radius: 8px;
+  padding: 24px;
+  margin-bottom: 24px;
+}
+.share-panel h3 {
+  font-size: 15px;
+  margin: 0 0 20px;
+}
+.share-bars {
+  display: flex;
+  align-items: flex-end;
+  gap: 20px;
+  height: 180px;
+  border-bottom: 1px solid #e5d9ca;
+  padding: 15px 10px 0;
+}
+.share-bars > div {
+  flex: 1;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  align-items: center;
+  font-size: 10px;
+  color: #b09a82;
+}
+.share-bars i {
+  display: block;
+  width: 100%;
+  max-width: 32px;
+  background: #c58a62;
+  border-radius: 4px 4px 0 0;
+  min-height: 4px;
+}
+.share-bars small {
+  line-height: 22px;
+  white-space: nowrap;
+  font-size: 9px;
+}
+.share-list {
+  padding: 0;
+  list-style: none;
+}
+.share-list li {
+  padding: 14px 0;
+  border-bottom: 1px solid #eee4d8;
+}
+.share-list p {
+  font-size: 12px;
+  margin: 0 0 6px;
+}
+.share-list small {
+  font-size: 10px;
+  color: #aa937c;
+}
+.share-editor {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 18px;
+}
+.share-editor label {
+  display: grid;
+  gap: 8px;
+  font-size: 12px;
+  color: #91765d;
+}
+.share-editor .wide {
+  grid-column: 1/-1;
+}
+.share-editor textarea {
+  min-height: 100px;
+  font-family: inherit;
+}
+.share-editor-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 22px;
+}
+.share-settings {
+  max-width: 900px;
+}
+.share-settings fieldset {
+  border: 1px solid #e6dacb;
+  border-radius: 8px;
+  padding: 24px;
+  margin: 0 0 24px;
+  background: #fffdf9;
+}
+.share-settings legend {
+  padding: 0 12px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #795a3e;
+}
+.share-modal {
+  position: fixed;
+  inset: 0;
+  background: #332a2380;
+  z-index: 1500;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+.share-modal > div {
+  background: #fffdf9;
+  border-radius: 10px;
+  padding: 28px;
+  max-width: 650px;
+  width: 100%;
+  max-height: 90vh;
+  overflow: auto;
+}
+.share-pager {
+  display: flex;
+  justify-content: center;
+  gap: 18px;
+  align-items: center;
+  padding: 22px;
+}
+.share-pager button {
+  background: white;
+  border: 1px solid #e5d9ca;
+  border-radius: 5px;
+  padding: 8px 13px;
+  color: #8b6d51;
+}
+.share-pager button:disabled {
+  opacity: 0.4;
+}
+.share-table-wrap {
+  overflow: auto;
+}
+.share-page-note {
+  font-size: 12px;
+  color: #a58d73;
+  margin: 10px 0 22px;
+}
+.share-login {
+  background: #f5eee4;
+  min-height: 100vh;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  font-family: -apple-system, "PingFang SC", sans-serif;
+  color: #513a28;
+}
+.share-login-art {
+  padding: 12vh 9vw;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  background: #d8b99a;
+}
+.share-login-art small {
+  font-size: 10px;
+  letter-spacing: 3px;
+}
+.share-login-art h1 {
+  font-family: "Songti SC", serif;
+  font-size: 54px;
+  line-height: 1.5;
+  font-weight: 500;
+  margin: 35px 0;
+}
+.share-login-art p {
+  font-size: 13px;
+  color: #8b6846;
+}
+.share-login-form {
+  align-self: center;
+  justify-self: center;
+  width: min(360px, 80%);
+}
+.share-login-form h2 {
+  font-size: 29px;
+  font-weight: 550;
+  margin: 0 0 10px;
+}
+.share-login-form > p {
+  font-size: 12px;
+  color: #aa8b6c;
+  margin-bottom: 32px;
+}
+.share-login-form label {
+  display: block;
+  font-size: 11px;
+  margin: 20px 0;
+}
+.share-login-form input {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  margin-top: 10px;
+  border: 1px solid #d8c1aa;
+  background: #fffdf9;
+  border-radius: 6px;
+  padding: 14px;
+  font: inherit;
+  color: #513a28;
+}
+.share-login-form button {
+  display: block;
+  width: 100%;
+  border: 0;
+  border-radius: 6px;
+  background: #a75939;
+  color: white;
+  padding: 14px;
+  margin-top: 30px;
+  cursor: pointer;
+}
+.share-login-form a {
+  display: inline-block;
+  margin-top: 22px;
+  font-size: 11px;
+  color: #9d7b58;
+  text-decoration: none;
+}
+.share-login-error {
+  font-size: 12px;
+  color: #b84f3a;
+  min-height: 20px;
+}
+@media (max-width: 1100px) {
+  .admin-share-stats {
+    grid-template-columns: 1fr 1fr;
+  }
+  .admin-share-grid {
+    grid-template-columns: 1fr;
+  }
+  .share-login-art {
+    padding: 10vh 6vw;
+  }
+  .share-login-art h1 {
+    font-size: 40px;
+  }
+}
+@media (max-width: 700px) {
+  .admin-content {
+    padding: 18px;
+  }
+  .admin-share-stats {
+    gap: 10px;
+  }
+  .admin-share-stats > div {
+    padding: 15px;
+  }
+  .admin-share-stats strong {
+    font-size: 24px;
+  }
+  .admin-share-intro {
+    display: block;
+  }
+  .admin-share-intro a {
+    margin-top: 15px;
+    display: inline-block;
+  }
+  .share-panel {
+    padding: 18px;
+  }
+  .share-editor {
+    grid-template-columns: 1fr;
+  }
+  .share-editor .wide {
+    grid-column: 1;
+  }
+  .share-settings fieldset {
+    padding: 18px;
+  }
+  .share-login {
+    grid-template-columns: 1fr;
+  }
+  .share-login-art {
+    display: none;
+  }
+  .share-login-form {
+    padding: 40px 0;
+  }
+  .share-modal > div {
+    padding: 20px;
+  }
+  .share-bars {
+    gap: 10px;
+  }
+  .admin-share-intro h2 {
+    font-size: 23px;
+  }
+}

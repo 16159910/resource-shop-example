@@ -1,0 +1,171 @@
+{extend name="layout/base" /}
+{block name="css"}
+<link rel="stylesheet" href="/static/css/home/account.css?v=20261015c">
+{/block}
+{block name="content"}
+<div class="account-page">
+  <div class="home-container">
+    <div class="user-layout">
+
+      <!-- 左侧个人信息 -->
+      {assign name="active" value="center" /}
+      {include file="user/sidebar" /}
+
+      <!-- 右侧内容 -->
+      <div class="user-main">
+        <div class="account-page-head">
+          <div>
+            <h1>我的资料</h1>
+            <p>已购资料会保存在这里，可随时查看和下载。</p>
+          </div>
+          <span class="account-count"><b>{$result.total}</b> 份资料</span>
+        </div>
+
+        {if !empty($result.list)}
+        <div class="purchase-list">
+          {foreach $result.list as $order}
+          <div class="purchase-item" id="item-{$order.material_id}">
+            {if !empty($order.cover)}
+            <img src="{$order.cover|thumb}" class="purchase-cover" alt="" loading="lazy">
+            {else}
+            <div class="purchase-cover-ph"><i class="fa-solid fa-book"></i></div>
+            {/if}
+            <div class="purchase-info">
+              <div class="purchase-title">{$order.title}</div>
+              <div class="purchase-meta">
+                <span><i class="fa-regular fa-clock"></i> {:date('Y-m-d H:i', $order.pay_time)}</span>
+                <span><i class="fa-solid fa-yen-sign"></i> {$order.amount}</span>
+                <span><i class="fa-regular fa-file-lines"></i> {$order.order_no}</span>
+              </div>
+              <div class="purchase-actions">
+                <button class="btn-sm btn-sm-green" onclick="download({$order.material_id})">
+                  <i class="fa-solid fa-download"></i> 下载资料
+                </button>
+                <a href="/detail/{$order.material_id}" class="btn-sm btn-sm-outline">
+                  <i class="fa-solid fa-eye"></i> 查看详情
+                </a>
+              </div>
+            </div>
+          </div>
+          {/foreach}
+        </div>
+
+          <!-- 分页 -->
+          {:include_pager($result.total, $result.page, 10, [])}
+
+        {else}
+        <div class="account-empty">
+          <div class="account-empty-icon"><i class="fa-solid fa-book-open"></i></div>
+          <h2>还没有已购资料</h2>
+          <p>找到需要的内容后，购买成功的资料会自动出现在这里。</p>
+          <a href="/list" class="btn-sm btn-sm-primary"><i class="fa-solid fa-compass"></i> 浏览资料库</a>
+        </div>
+        {/if}
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- 下载弹窗 -->
+<div id="pan-modal" class="pan-modal" style="display:none;" role="dialog" aria-modal="true" aria-labelledby="pan-modal-title">
+  <div class="pan-modal-panel">
+    <div class="pan-modal-head">
+      <h3 id="pan-modal-title"><i class="fa-solid fa-cloud-arrow-down"></i> 网盘资料下载</h3>
+      <button type="button" class="pan-modal-close" onclick="document.getElementById('pan-modal').style.display='none'" title="关闭" aria-label="关闭">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+    </div>
+    <div id="pan-both-tip" class="pan-field-label" style="display:none;margin-bottom:10px;">
+      两种方式都可以，挑顺手的用
+    </div>
+    <div id="pan-group">
+      <div class="pan-field">
+        <div class="pan-field-label">网盘链接</div>
+        <a id="pan-url" class="pan-url" href="" target="_blank" rel="noopener"></a>
+      </div>
+      <div id="pan-code-row" class="pan-field" style="display:none;">
+        <div class="pan-field-label">提取码</div>
+        <div class="pan-code-line">
+          <span id="pan-code" class="pan-code"></span>
+          <button type="button" class="pan-copy-btn" onclick="copyText(document.getElementById('pan-code').textContent)">复制</button>
+        </div>
+      </div>
+    </div>
+    <div id="file-group" class="pan-field" style="display:none;">
+      <div class="pan-field-label">直接下载</div>
+      <div class="pan-code-line">
+        <span id="file-name" class="pan-code"></span>
+      </div>
+    </div>
+    <div class="pan-actions">
+      <a id="pan-open-btn" class="pan-open-btn" href="" target="_blank" rel="noopener">
+        <i class="fa-solid fa-external-link-alt"></i> 打开网盘链接
+      </a>
+      <a id="file-dl-btn" class="pan-open-btn" href="" style="display:none;">
+        <i class="fa-solid fa-download"></i> 下载文件
+      </a>
+      <button type="button" class="pan-cancel-btn" onclick="document.getElementById('pan-modal').style.display='none'">取消</button>
+    </div>
+  </div>
+</div>
+{/block}
+{block name="js"}
+<script>
+// deliveryType 只是列表上的标签，真正给哪几种以后端返回的 ways 为准
+async function download(materialId) {
+  const endpoint = '/user/download?material_id=' + materialId;
+  const res = await fetch(endpoint);
+  const data = await res.json();
+  if (data.code !== 0) {
+    BizHelper.toast(data.msg, 'error');
+    return;
+  }
+
+  const ways = data.data.ways || [];
+  // 卡密商品：直接弹激活码
+  if (ways.indexOf('card') > -1) {
+    BizHelper.showCards(data.data);
+    return;
+  }
+  const hasPan = ways.indexOf('pan') > -1;
+  const hasFile = ways.indexOf('file') > -1;
+
+  // 只有直链，没什么好选的，直接开始下载
+  if (hasFile && !hasPan) {
+    window.location.href = endpoint + '&way=file';
+    return;
+  }
+
+  const show = (id, on) => { document.getElementById(id).style.display = on ? 'block' : 'none'; };
+  show('pan-both-tip', hasPan && hasFile);
+  show('pan-group', hasPan);
+  show('file-group', hasFile);
+  document.getElementById('pan-open-btn').style.display = hasPan ? '' : 'none';
+  document.getElementById('file-dl-btn').style.display = hasFile ? '' : 'none';
+
+  if (hasPan) {
+    const panUrl = document.getElementById('pan-url');
+    panUrl.textContent = data.data.url;
+    panUrl.href = data.data.url;
+    document.getElementById('pan-open-btn').href = data.data.url;
+    const codeRow = document.getElementById('pan-code-row');
+    if (data.data.code) {
+      document.getElementById('pan-code').textContent = data.data.code;
+      codeRow.style.display = 'block';
+    } else {
+      codeRow.style.display = 'none';
+    }
+  }
+  if (hasFile) {
+    document.getElementById('file-name').textContent = data.data.file_name || '';
+    document.getElementById('file-dl-btn').href = endpoint + '&way=file';
+  }
+  document.getElementById('pan-modal').style.display = 'flex';
+}
+
+function copyText(text) {
+  navigator.clipboard.writeText(text).then(() => BizHelper.toast('已复制到剪贴板'));
+}
+</script>
+{/block}

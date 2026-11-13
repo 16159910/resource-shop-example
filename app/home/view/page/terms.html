@@ -1,0 +1,55 @@
+{extend name="layout/base" /}
+{block name="content"}
+<div class="home-container" style="padding:40px 16px 60px;">
+  <div style="max-width:760px;margin:0 auto;">
+    <h1 style="font-size:24px;font-weight:700;margin-bottom:8px;">用户服务协议</h1>
+    <p style="color:var(--text-muted);font-size:13px;margin-bottom:32px;">最后更新：{:date('Y年m月d日')}</p>
+
+    <div class="policy-body">
+      <h2>一、服务说明</h2>
+      <p>{$siteConfig.site_name|default='本平台'}提供教育资料的在线购买与下载服务。购买成功后您可在「个人中心 → 我的资料」页面获取资料链接或下载文件。</p>
+
+      <h2>二、账号注册</h2>
+      <ul>
+        <li>您须提供真实有效的手机号或电子邮箱，并保管好账号密码；</li>
+        <li>禁止冒用他人身份注册，禁止将账号借给他人使用；</li>
+        <li>因账号泄露导致的损失由用户自行承担。</li>
+      </ul>
+
+      <h2>三、购买与退款</h2>
+      <ul>
+        <li>资料为数字内容产品，支付成功后<strong>原则上不支持退款</strong>；</li>
+        <li>若因平台原因（如文件损坏、链接失效）导致无法获取资料，请联系客服处理；</li>
+        <li>未支付的订单将在 10 分钟后自动关闭。</li>
+      </ul>
+
+      <h2>四、知识产权</h2>
+      <p>平台上的所有资料版权归原作者所有，购买仅限个人学习使用，<strong>禁止转售、二次传播或用于商业用途</strong>。</p>
+
+      <h2>五、禁止行为</h2>
+      <ul>
+        <li>利用平台传播违法、有害内容；</li>
+        <li>破解、绕过平台的权限控制；</li>
+        <li>批量注册账号、刷单等扰乱平台秩序的行为。</li>
+      </ul>
+      <p>违反上述规定，平台有权立即封禁账号，情节严重的将追究法律责任。</p>
+
+      <h2>六、免责声明</h2>
+      <p>因不可抗力（如服务器故障、自然灾害）导致服务中断的，平台不承担责任，但会尽快恢复服务。</p>
+
+      <h2>七、协议更新</h2>
+      <p>本协议可能随业务发展更新，更新后将在页面显示新日期。继续使用服务视为接受新协议。</p>
+    </div>
+  </div>
+</div>
+{/block}
+
+{block name="css"}
+<style>
+.policy-body h2 { font-size:16px; font-weight:700; margin:24px 0 10px; color:var(--text); }
+.policy-body p  { font-size:14px; line-height:1.8; color:var(--text-muted); margin-bottom:10px; }
+.policy-body ul { padding-left:20px; margin-bottom:10px; }
+.policy-body li { font-size:14px; line-height:1.8; color:var(--text-muted); }
+.policy-body strong { color:var(--text); }
+</style>
+{/block}

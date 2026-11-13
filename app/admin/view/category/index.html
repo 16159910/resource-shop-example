@@ -1,0 +1,157 @@
+{extend name="layout/base" /}
+{block name="content"}
+<div id="app" v-cloak>
+  <div class="admin-card">
+    <div class="biz-toolbar">
+      <span style="font-weight:600;font-size:15px;">分类管理</span>
+      <div class="spacer"></div>
+      <button class="btn-primary" @click="openAdd"><i class="fa-solid fa-plus"></i> 新增分类</button>
+    </div>
+    <div style="padding:0 20px 20px;">
+      <div v-if="loading" class="biz-loading"></div>
+      <template v-else>
+        <table class="biz-table" v-if="list.length">
+          <thead>
+            <tr>
+              <th style="width:60px">ID</th>
+              <th>分类名称</th>
+              <th>图标</th>
+              <th>排序</th>
+              <th>状态</th>
+              <th style="width:140px;white-space:nowrap">操作</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="item in treeList" :key="item.id">
+              <td>[[ item.id ]]</td>
+              <td>
+                <span v-if="item.parent_id > 0" style="color:var(--text-muted);margin-right:6px;">└</span>
+                [[ item.name ]]
+              </td>
+              <td><i :class="item.icon || 'fa-solid fa-folder'" style="color:var(--primary)"></i></td>
+              <td>[[ item.sort ]]</td>
+              <td><span :class="item.status==1?'badge badge-success':'badge badge-danger'">[[ item.status==1?'启用':'禁用' ]]</span></td>
+              <td style="white-space:nowrap">
+                <button class="biz-btn biz-btn-edit" @click="openEdit(item)"><i class="fa-solid fa-pen-to-square"></i> 编辑</button>
+                <button class="biz-btn biz-btn-del" @click="del(item.id)" style="margin-left:4px"><i class="fa-solid fa-trash-can"></i> 删除</button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+        <div v-else class="biz-empty"><i class="fa-solid fa-folder-open"></i><p>暂无分类</p></div>
+      </template>
+    </div>
+  </div>
+
+  <!-- 弹窗 -->
+  <div class="modal-mask" v-if="modal.show">
+    <div class="modal-box" style="width:480px">
+      <div class="modal-header">
+        <h4>[[ modal.id ? '编辑分类' : '新增分类' ]]</h4>
+        <button class="modal-close" @click="modal.show=false">×</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-item">
+          <div class="form-item-label required">分类名称</div>
+          <input class="form-input" v-model="modal.form.name" placeholder="如：幼儿园、小学语文">
+        </div>
+        <div class="form-item">
+          <div class="form-item-label">图标类名</div>
+          <input class="form-input" v-model="modal.form.icon" placeholder="如：fa-solid fa-child">
+          <div class="form-hint">Font Awesome 图标类名，留空默认</div>
+        </div>
+        <div class="form-row">
+          <div class="form-item">
+            <div class="form-item-label">父级分类</div>
+            <biz-select v-model="modal.form.parent_id" :options="parentOpts" :full="true"></biz-select>
+          </div>
+          <div class="form-item">
+            <div class="form-item-label">排序</div>
+            <div class="biz-spinner">
+              <button class="biz-spinner-btn" @click="modal.form.sort>0?modal.form.sort--:null">−</button>
+              <input type="number" class="biz-spinner-input" v-model.number="modal.form.sort" min="0">
+              <button class="biz-spinner-btn" @click="modal.form.sort++">+</button>
+            </div>
+          </div>
+        </div>
+        <div class="form-item">
+          <div class="form-item-label">状态</div>
+          <label class="form-switch-wrap">
+            <input type="checkbox" :checked="modal.form.status==1" @change="modal.form.status=$event.target.checked?1:0">
+            <span class="switch-track"><span class="switch-thumb"></span></span>
+            <span>[[ modal.form.status==1?'启用':'禁用' ]]</span>
+          </label>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-default" @click="modal.show=false">取消</button>
+        <button class="btn-primary" @click="save" :disabled="saving">
+          <i class="fa-solid fa-spinner fa-spin" v-if="saving"></i>
+          <span v-else>保存</span>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+{/block}
+{block name="js"}
+<script>
+_createAdminApp({
+  delimiters: ['[[',']]'],
+  data() {
+    return {
+      list: [], loading: true, saving: false,
+      modal: { show: false, id: 0, form: { name:'', icon:'', parent_id:0, sort:0, status:1 } }
+    };
+  },
+  computed: {
+    topList() { return this.list.filter(c => c.parent_id == 0); },
+    // 按树形排：每个顶级分类后面紧跟它的子分类；找不到上级的子分类放最后，免得看不见
+    treeList() {
+      const rows = [];
+      this.topList.forEach(t => rows.push(t, ...this.list.filter(c => c.parent_id == t.id)));
+      return rows.concat(this.list.filter(c => !rows.includes(c)));
+    },
+    parentOpts() {
+      return [{value:0, label:'顶级分类'}, ...this.topList.map(c => ({value:c.id, label:c.name}))];
+    }
+  },
+  mounted() { this.load(); },
+  methods: {
+    async load() {
+      this.loading = true;
+      const r = await BizHelper.get('/admin/category/list');
+      this.list = r.data || [];
+      this.loading = false;
+    },
+    openAdd() {
+      this.modal = { show: true, id: 0, form: { name:'', icon:'', parent_id:0, sort:0, status:1 } };
+    },
+    openEdit(item) {
+      this.modal = { show: true, id: item.id, form: { ...item } };
+    },
+    async save() {
+      if (!this.modal.form.name) return BizHelper.toast('请输入分类名称','warning');
+      this.saving = true;
+      const data = { ...this.modal.form, id: this.modal.id };
+      const r = await BizHelper.request('/admin/category/save', data);
+      this.saving = false;
+      if (r.code === 0) {
+        BizHelper.toast('保存成功');
+        this.modal.show = false;
+        this.load();
+      } else {
+        BizHelper.toast(r.msg, 'error');
+      }
+    },
+    async del(id) {
+      const ok = await BizHelper.confirm('确定删除该分类吗？删除后不可恢复');
+      if (!ok) return;
+      const r = await BizHelper.request('/admin/category/delete', { id });
+      if (r.code === 0) { BizHelper.toast('已删除'); this.load(); }
+      else BizHelper.toast(r.msg, 'error');
+    }
+  }
+}).mount('#app');
+</script>
+{/block}

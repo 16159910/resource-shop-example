@@ -1,0 +1,249 @@
+{extend name="layout/base" /}
+{block name="content"}
+<div id="app" v-cloak>
+
+  <!-- 卡密商品：一行一个商品，后面管理该商品的卡密 -->
+  <div class="admin-card">
+    <div class="biz-toolbar">
+      <span style="font-weight:600;font-size:14px;">卡密商品</span>
+      <input class="form-input" v-model="kw" placeholder="搜索商品名称" style="width:200px;margin-left:12px;">
+      <div class="spacer"></div>
+      <button class="btn-primary" :disabled="!products.length" @click="openImport('')"><i class="fa-solid fa-file-import"></i> 导入卡密</button>
+    </div>
+    <div style="padding:0 20px 20px;">
+      <div v-if="productsLoading" class="biz-loading"></div>
+      <template v-else>
+        <table class="biz-table" v-if="shownProducts.length">
+          <thead>
+            <tr>
+              <th>商品</th>
+              <th style="width:100px">售价</th>
+              <th style="width:100px">库存</th>
+              <th style="width:100px">已售</th>
+              <th style="width:100px">总数</th>
+              <th style="width:90px">状态</th>
+              <th style="width:230px;white-space:nowrap">操作</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="p in shownProducts" :key="p.id">
+              <td>
+                <div style="display:flex;align-items:center;gap:10px;">
+                  <img v-if="p.cover" :src="p.cover" style="width:40px;height:40px;border-radius:6px;object-fit:cover;flex:none;">
+                  <div style="font-weight:600;">[[ p.title ]]</div>
+                </div>
+              </td>
+              <td>¥[[ p.price ]]</td>
+              <td><span :class="'badge ' + (p.unsold > 0 ? 'badge-success' : 'badge-danger')">[[ p.unsold ]]</span></td>
+              <td>[[ p.sold ]]</td>
+              <td>[[ p.unsold + p.sold ]]</td>
+              <td><span :class="'badge ' + (p.status == 1 ? 'badge-primary' : 'badge-default')">[[ p.status == 1 ? '上架' : '未上架' ]]</span></td>
+              <td style="white-space:nowrap">
+                <button class="biz-btn biz-btn-edit" @click="openManage(p)"><i class="fa-solid fa-key"></i> 管理卡密</button>
+                <button class="biz-btn biz-btn-edit" @click="openImport(p.id)"><i class="fa-solid fa-file-import"></i> 导入</button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+        <div v-else class="biz-empty"><i class="fa-solid fa-key"></i><p>[[ kw ? '没有匹配的商品' : '还没有卡密商品，先到「资料管理」新建一个，商品类型选「卡密商品」' ]]</p></div>
+      </template>
+    </div>
+  </div>
+
+  <!-- 管理某个商品的卡密 -->
+  <div class="modal-mask" v-if="mg.show">
+    <div class="modal-box" style="width:1000px;max-width:96vw;">
+      <div class="modal-header">
+        <h4><i class="fa-solid fa-key" style="color:var(--primary);margin-right:6px;"></i>[[ mg.product.title ]]</h4>
+        <button class="modal-close" @click="mg.show=false"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <div class="modal-body" style="padding-top:12px;">
+        <div class="biz-toolbar" style="padding:0 0 12px;">
+          <biz-select v-model="params.status" :options="statusOpts" style="width:120px;" @change="search"></biz-select>
+          <input class="form-input" v-model="params.keyword" placeholder="搜索卡号" style="width:200px;" @keyup.enter="search">
+          <button class="btn-default" @click="search"><i class="fa-solid fa-magnifying-glass"></i> 搜索</button>
+          <div class="spacer"></div>
+          <button class="btn-danger" v-if="selected.length" @click="delSelected"><i class="fa-solid fa-trash-can"></i> 删除选中（[[ selected.length ]]）</button>
+          <button class="btn-default" @click="exportCsv"><i class="fa-solid fa-file-export"></i> 导出</button>
+          <button class="btn-primary" @click="openImport(mg.product.id)"><i class="fa-solid fa-file-import"></i> 导入卡密</button>
+        </div>
+        <div v-if="loading" class="biz-loading"></div>
+        <template v-else>
+          <table class="biz-table" v-if="list.length">
+            <thead>
+              <tr>
+                <th style="width:40px"><input type="checkbox" :checked="allChecked" @change="toggleAll"></th>
+                <th>卡号</th>
+                <th>密码</th>
+                <th style="width:80px">状态</th>
+                <th>订单号</th>
+                <th style="width:140px">售出时间</th>
+                <th style="width:130px">导入批次</th>
+                <th style="width:90px">操作</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="item in list" :key="item.id">
+                <td><input type="checkbox" v-if="item.status == 0" :value="item.id" v-model="selected"></td>
+                <td style="font-family:Menlo,Consolas,monospace;">[[ item.card_no ]]</td>
+                <td style="font-family:Menlo,Consolas,monospace;color:var(--text-muted);">[[ item.card_secret || '-' ]]</td>
+                <td><span :class="item.status == 1 ? 'badge badge-default' : 'badge badge-success'">[[ item.status == 1 ? '已售' : '未售' ]]</span></td>
+                <td style="font-size:12px;">[[ item.order_no || '-' ]]</td>
+                <td style="font-size:12px;">[[ item.sold_time || '-' ]]</td>
+                <td style="font-size:12px;color:var(--text-muted);">[[ item.batch_no ]]</td>
+                <td><button v-if="item.status == 0" class="biz-btn biz-btn-del" @click="del([item.id])"><i class="fa-solid fa-trash-can"></i> 删除</button></td>
+              </tr>
+            </tbody>
+          </table>
+          <div v-else class="biz-empty"><i class="fa-solid fa-box-open"></i><p>[[ params.status !== '' || params.keyword ? '没有符合条件的卡密' : '这个商品还没有卡密，点右上角导入' ]]</p></div>
+        </template>
+        <div class="biz-pager" v-if="total > 0" style="padding:12px 0 0;">
+          <div class="pager-info">共 [[ total ]] 张，第 [[ page ]]/[[ totalPages ]] 页</div>
+          <div class="pager-btns">
+            <button class="pager-btn" @click="changePage(page-1)" :disabled="page<=1"><i class="fa-solid fa-chevron-left"></i></button>
+            <button v-for="p in pageList" :key="p" class="pager-btn" :class="p===page?'active':''" @click="changePage(p)">[[ p ]]</button>
+            <button class="pager-btn" @click="changePage(page+1)" :disabled="page>=totalPages"><i class="fa-solid fa-chevron-right"></i></button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 导入弹窗 -->
+  <div class="modal-mask" v-if="imp.show" style="z-index:1100;">
+    <div class="modal-box" style="width:600px;">
+      <div class="modal-header">
+        <h4>导入卡密</h4>
+        <button class="modal-close" @click="imp.show=false"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <div class="modal-body">
+        <div class="form-item">
+          <div class="form-item-label required">导入到商品</div>
+          <div class="form-item-content"><biz-select v-model="imp.material_id" :options="productOpts" placeholder="选择卡密商品" :full="true"></biz-select></div>
+        </div>
+        <div class="form-item">
+          <div class="form-item-label required">卡密（一行一张）</div>
+          <div class="form-item-content">
+            <textarea class="form-textarea" v-model="imp.text" style="min-height:220px;font-family:Menlo,Consolas,monospace;"
+                      placeholder="只有激活码：&#10;ABCD-1234-EFGH&#10;&#10;卡号 + 密码（空格、逗号、Tab 或 ---- 分隔）：&#10;100001 8F3K2M&#10;100002,9X7Q1P"></textarea>
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-top:8px;">
+              <label class="btn-default" style="cursor:pointer;"><i class="fa-solid fa-file-lines"></i> 从 txt / csv 文件读取
+                <input type="file" accept=".txt,.csv" style="display:none" @change="readFile">
+              </label>
+              <span class="form-hint" style="margin:0;">识别到 <b>[[ lineCount ]]</b> 行，同一商品已有的卡号会自动跳过</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-default" @click="imp.show=false">取消</button>
+        <button class="btn-primary" @click="doImport" :disabled="imp.saving">[[ imp.saving ? '导入中…' : '开始导入' ]]</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+{/block}
+
+{block name="js"}
+<script>
+window.CARD_MATERIAL_ID = {$materialId};
+</script>
+<script>
+_createAdminApp({
+  delimiters: ['[[', ']]'],
+  data() {
+    return {
+      products: [], productsLoading: true, kw: '',
+      list: [], total: 0, page: 1, pageSize: 20, loading: true, selected: [],
+      mg: { show: false, product: {} },
+      params: { material_id: '', status: '', keyword: '' },
+      statusOpts: [{ value: '', label: '全部状态' }, { value: '0', label: '未售' }, { value: '1', label: '已售' }],
+      imp: { show: false, saving: false, material_id: '', text: '' }
+    };
+  },
+  computed: {
+    shownProducts() { const k = this.kw.trim(); return k ? this.products.filter(p => p.title.includes(k)) : this.products; },
+    productOpts() { return this.products.map(p => ({ value: p.id, label: p.title + '（库存 ' + p.unsold + '）' })); },
+    lineCount() { return this.imp.text.split(/\r?\n/).filter(l => l.trim()).length; },
+    totalPages() { return Math.ceil(this.total / this.pageSize); },
+    pageList() {
+      const pages = [], t = this.totalPages, p = this.page;
+      for (let i = Math.max(1, p-2); i <= Math.min(t, p+2); i++) pages.push(i);
+      return pages;
+    },
+    unsoldIds() { return this.list.filter(i => i.status == 0).map(i => i.id); },
+    allChecked() { return this.unsoldIds.length > 0 && this.unsoldIds.every(id => this.selected.includes(id)); }
+  },
+  async mounted() {
+    await this.loadProducts();
+    // 从资料管理跳过来时带着商品 ID，直接打开它的卡密
+    const p = this.products.find(x => x.id == window.CARD_MATERIAL_ID);
+    if (p) this.openManage(p);
+  },
+  methods: {
+    async loadProducts() {
+      const r = await BizHelper.get('/admin/card/products');
+      this.products = r.data || [];
+      this.productsLoading = false;
+      if (this.mg.show) this.mg.product = this.products.find(x => x.id == this.mg.product.id) || this.mg.product;
+    },
+    async load() {
+      this.loading = true;
+      this.selected = [];
+      const q = new URLSearchParams({ ...this.params, page: this.page, page_size: this.pageSize });
+      const r = await BizHelper.get('/admin/card/list?' + q);
+      this.list = r.data?.list || [];
+      this.total = r.data?.total || 0;
+      this.loading = false;
+    },
+    openManage(p) {
+      this.mg.product = p;
+      this.mg.show = true;
+      Object.assign(this.params, { material_id: p.id, status: '', keyword: '' });
+      this.search();
+    },
+    search() { this.page = 1; this.load(); },
+    changePage(p) { if (p < 1 || p > this.totalPages) return; this.page = p; this.load(); },
+    toggleAll(e) { this.selected = e.target.checked ? [...this.unsoldIds] : []; },
+    openImport(id) {
+      Object.assign(this.imp, { show: true, saving: false, material_id: id || (this.products[0] && this.products[0].id) || '', text: '' });
+    },
+    readFile(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = () => { this.imp.text = (this.imp.text ? this.imp.text.trimEnd() + '\n' : '') + String(reader.result).replace(/^﻿/, ''); };
+      reader.readAsText(file, 'utf-8');
+      e.target.value = '';
+    },
+    async doImport() {
+      if (!this.imp.material_id) return BizHelper.toast('请选择商品', 'error');
+      if (!this.lineCount) return BizHelper.toast('请填写卡密', 'error');
+      this.imp.saving = true;
+      const r = await BizHelper.request('/admin/card/import', { material_id: this.imp.material_id, text: this.imp.text });
+      this.imp.saving = false;
+      if (r.code !== 0) return BizHelper.toast(r.msg || '导入失败', 'error');
+      const d = r.data;
+      BizHelper.confirm(`成功导入 ${d.added} 张` + (d.duplicated ? `，重复跳过 ${d.duplicated} 张` : '') + (d.backfilled ? `，已给 ${d.backfilled} 笔缺货订单补发` : ''), { confirm: '知道了', showCancelButton: false, icon: 'success' });
+      this.imp.show = false;
+      await this.loadProducts();
+      const p = this.products.find(x => x.id == this.imp.material_id);
+      if (p) this.openManage(p);
+    },
+    async del(ids) {
+      const ok = await BizHelper.confirm(`确定删除 ${ids.length} 张未售卡密吗？`);
+      if (!ok) return;
+      const r = await BizHelper.request('/admin/card/delete', { ids });
+      if (r.code === 0) { BizHelper.toast('已删除 ' + r.data.deleted + ' 张'); this.loadProducts(); this.load(); }
+      else BizHelper.toast(r.msg || '删除失败', 'error');
+    },
+    delSelected() { this.del([...this.selected]); },
+    exportCsv() {
+      if (!this.params.material_id) return;
+      window.location.href = '/admin/card/export?' + new URLSearchParams({ material_id: this.params.material_id, status: this.params.status });
+    }
+  }
+}).mount('#app');
+</script>
+{/block}

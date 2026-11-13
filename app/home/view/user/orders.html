@@ -1,0 +1,47 @@
+{extend name="layout/base" /}{block name="content"}
+<div class="store-container user-layout">
+  {include file="user/sidebar" /}
+  <section class="user-main">
+    <div class="collection-heading">
+      <div>
+        <span class="eyebrow">YOUR ORDERS</span>
+        <h1>订单记录</h1>
+      </div>
+      <span>共 {$total} 笔订单</span>
+    </div>
+    <div class="simple-order-list">
+      {foreach $list as $order}
+      <article>
+        <div>
+          <small>{$order.order_no}</small>
+          <h2>{$order.title}</h2>
+          <p>{$order.time_label}</p>
+        </div>
+        <div>
+          <strong>¥{$order.amount}</strong
+          ><span class="order-label">{$order.status_text}</span>{if
+          $order.pay_status==1}<a class="button secondary" href="/user/center"
+            >查看资料</a
+          >{elseif $order.status!=2}<button
+            class="button"
+            onclick="openPay('{$order.order_no}')"
+          >
+            继续支付</button
+          >{/if}
+        </div>
+      </article>
+      {/foreach}
+    </div>
+    {if empty($list)}
+    <div class="store-empty">
+      这里还没有订单。<a href="/list">去挑一份资料 →</a>
+    </div>
+    {/if}
+    <div class="catalog-pagination">
+      {if $page>1}<a href="?page={$page-1}">← 上一页</a>{/if}<span
+        >第 {$page} 页</span
+      >{if $page*10<$total}<a href="?page={$page+1}">下一页 →</a>{/if}
+    </div>
+  </section>
+</div>
+{/block}

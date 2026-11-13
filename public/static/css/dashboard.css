@@ -1,0 +1,380 @@
+/* ===== 后台仪表板 ===== */
+/* 撑满一屏：100vh - 顶栏 60px - .admin-content 的上下内边距(4+24)
+   用 min-height 而不是 height，内容多了照样能往下长 */
+.dash {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-height: calc(100vh - 88px);
+}
+
+/* ---------- 待办条 ---------- */
+.dash-todo {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 12px 18px;
+  border-radius: 12px;
+  background: linear-gradient(90deg, #fff7e6, #fffdf7);
+  border: 1px solid #ffe1a8;
+}
+.dash-todo-bell { color: #d48806; font-size: 14px; }
+.dash-todo-label { font-size: 13px; font-weight: 700; color: #ad6800; margin-right: 2px; }
+.dash-todo-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 12px;
+  border-radius: 20px;
+  background: #fff;
+  border: 1px solid #ffd591;
+  color: #ad6800;
+  font-size: 12.5px;
+  transition: all .18s;
+}
+.dash-todo-chip b { font-size: 14px; font-weight: 800; }
+.dash-todo-chip:hover { background: #d48806; border-color: #d48806; color: #fff; }
+
+/* ---------- 今日 + 趋势 ---------- */
+.dash-hero {
+  display: grid;
+  grid-template-columns: 300px minmax(0, 1fr);
+  gap: 16px;
+  align-items: stretch;
+}
+
+.dash-today {
+  position: relative;
+  overflow: hidden;
+  padding: 22px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, #1677ff, #0a4fbd);
+  color: #fff;
+  display: flex;
+  flex-direction: column;
+}
+/* 右上角一圈柔光，避免大色块太平 */
+.dash-today::after {
+  content: '';
+  position: absolute;
+  top: -70px; right: -50px;
+  width: 190px; height: 190px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, .12);
+}
+.dash-today-label { font-size: 13px; opacity: .85; }
+.dash-today-value {
+  margin-top: 6px;
+  font-size: 38px;
+  font-weight: 800;
+  letter-spacing: -1px;
+  line-height: 1.1;
+}
+.dash-today-value .unit { font-size: 22px; font-weight: 700; margin-right: 2px; opacity: .9; }
+.dash-today-meta {
+  display: flex; align-items: center; flex-wrap: wrap;
+  gap: 8px; margin-top: 12px;
+  font-size: 12px;
+}
+.dash-delta {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 2px 8px;
+  border-radius: 20px;
+  background: rgba(255, 255, 255, .2);
+  font-weight: 700;
+}
+.dash-delta.down { background: rgba(0, 0, 0, .18); }
+.dash-delta.muted { background: rgba(255, 255, 255, .14); font-weight: 400; }
+.dash-today-sub { opacity: .85; }
+.dash-today-split {
+  display: flex;
+  margin-top: auto;
+  padding-top: 16px;
+  border-top: 1px solid rgba(255, 255, 255, .22);
+}
+.dash-today-split > div { flex: 1; }
+.dash-today-split span { display: block; font-size: 12px; opacity: .8; }
+.dash-today-split b { font-size: 17px; font-weight: 700; }
+
+.dash-chart {
+  display: flex;
+  flex-direction: column;
+  padding: 18px 20px;
+  border-radius: 14px;
+  background: var(--card-bg, #fff);
+  border: 1px solid var(--border);
+}
+.dash-chart-head {
+  display: flex; align-items: baseline; justify-content: space-between;
+  margin-bottom: 4px;
+}
+.dash-chart-head h3 { margin: 0; font-size: 14px; font-weight: 700; }
+.dash-chart-max { font-size: 12px; color: var(--text-muted); }
+
+.dash-bars {
+  flex: 1;
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 10px;
+  align-items: end;
+  min-height: 140px;
+  padding-top: 14px;
+}
+.dash-bar-col { display: flex; flex-direction: column; height: 100%; }
+.dash-bar-wrap {
+  position: relative;
+  flex: 1;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+}
+.dash-bar {
+  width: 100%;
+  max-width: 42px;
+  border-radius: 7px 7px 3px 3px;
+  background: linear-gradient(180deg, #91caff, #69b1ff);
+  transition: filter .18s;
+}
+.dash-bar.is-today { background: linear-gradient(180deg, #1677ff, #0958d9); }
+.dash-bar.is-zero { background: #eef1f7; }
+.dash-bar-col:hover .dash-bar { filter: brightness(1.08); }
+
+/* 悬停才显示的数值气泡 */
+.dash-bar-tip {
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 5px 9px;
+  border-radius: 7px;
+  background: rgba(21, 32, 51, .92);
+  color: #fff;
+  font-size: 11px;
+  line-height: 1.5;
+  text-align: center;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .15s;
+  z-index: 5;
+}
+.dash-bar-col:hover .dash-bar-tip { opacity: 1; }
+.dash-bar-label {
+  margin-top: 8px;
+  text-align: center;
+  font-size: 11.5px;
+  color: var(--text-muted);
+}
+.dash-bar-label.is-today { color: var(--primary); font-weight: 700; }
+
+/* ---------- 家底指标 ---------- */
+.dash-metrics {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 12px;
+}
+.dash-metric {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px;
+  border-radius: 12px;
+  background: var(--card-bg, #fff);
+  border: 1px solid var(--border);
+  transition: transform .16s, box-shadow .16s, border-color .16s;
+}
+.dash-metric:hover {
+  transform: translateY(-2px);
+  border-color: var(--primary);
+  box-shadow: 0 8px 20px rgba(22, 119, 255, .1);
+}
+.dash-metric > i {
+  width: 38px; height: 38px;
+  flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: 10px;
+  background: var(--primary-light);
+  color: var(--primary);
+  font-size: 15px;
+}
+.dash-metric b {
+  display: block;
+  font-size: 20px;
+  font-weight: 800;
+  line-height: 1.2;
+  color: var(--text);
+}
+.dash-metric span {
+  display: block;
+  margin-top: 2px;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+.dash-metric em {
+  display: block;
+  font-style: normal;
+  font-size: 11px;
+  color: #d48806;
+  margin-top: 1px;
+}
+.dash-metric-accent > i { background: #e6fffb; color: #08979c; }
+.dash-metric-accent b { color: #08979c; }
+
+/* ---------- 两栏面板 ---------- */
+/* 两栏吃掉上面几块之后剩下的全部高度，条目少就留白、多了内部滚动。
+   min-height 保证内容极少时也不会被压扁 */
+.dash-cols {
+  flex: 1;
+  min-height: 300px;
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr);
+  gap: 16px;
+  align-items: stretch;
+}
+.dash-panel {
+  display: flex;
+  flex-direction: column;
+  border-radius: 14px;
+  background: var(--card-bg, #fff);
+  border: 1px solid var(--border);
+  overflow: hidden;
+}
+.dash-panel-head { flex-shrink: 0; }
+.dash-order-list,
+.dash-qa-list {
+  flex: 1;
+  /* flex 子项要能滚动，min-height 必须归零，否则会被内容顶开 */
+  min-height: 0;
+  overflow-y: auto;
+}
+/* 滚动条不显示，和全站口径一致（滚动本身不受影响） */
+.dash-order-list,
+.dash-qa-list { scrollbar-width: none; -ms-overflow-style: none; }
+.dash-order-list::-webkit-scrollbar,
+.dash-qa-list::-webkit-scrollbar { width: 0; height: 0; display: none; }
+.dash-panel-head {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 15px 18px;
+  border-bottom: 1px solid var(--border);
+}
+.dash-panel-head h3 {
+  margin: 0;
+  display: flex; align-items: center; gap: 7px;
+  font-size: 14px; font-weight: 700;
+}
+.dash-panel-head h3 > i { color: var(--primary); }
+.dash-panel-head a { font-size: 12px; color: var(--text-muted); }
+.dash-panel-head a:hover { color: var(--primary); }
+.dash-panel-head a i { font-size: 9px; }
+.dash-pill {
+  padding: 1px 8px;
+  border-radius: 20px;
+  background: #fff1f0;
+  color: #cf1322;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+/* 最近成交 */
+.dash-order {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 11px 18px;
+  border-bottom: 1px solid #f3f5fa;
+  font-size: 13px;
+  transition: background .14s;
+}
+.dash-order:last-child { border-bottom: none; }
+.dash-order:hover { background: #f7faff; }
+.dash-order-badge {
+  flex-shrink: 0;
+  padding: 2px 7px;
+  border-radius: 5px;
+  background: var(--primary-light);
+  color: var(--primary);
+  font-size: 11px;
+}
+.dash-order-title {
+  flex: 1; min-width: 0;
+  color: var(--text);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.dash-order-user { flex-shrink: 0; width: 76px; color: var(--text-muted); font-size: 12px;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dash-order-amount { flex-shrink: 0; width: 72px; text-align: right; white-space: nowrap; color: var(--primary); font-weight: 700; }
+/* 「09-13 15:44」要 76px 上下，宽度不够就会折成两行，把行撑高 */
+.dash-order-time {
+  flex-shrink: 0;
+  width: 84px;
+  text-align: right;
+  white-space: nowrap;
+  color: var(--text-muted);
+  font-size: 11.5px;
+}
+
+/* 待回复提问 */
+.dash-qa {
+  display: block;
+  padding: 11px 18px;
+  border-bottom: 1px solid #f3f5fa;
+  transition: background .14s;
+}
+.dash-qa:last-child { border-bottom: none; }
+.dash-qa:hover { background: #f7faff; }
+.dash-qa-top { display: flex; justify-content: space-between; margin-bottom: 3px; }
+.dash-qa-user { font-size: 12.5px; font-weight: 600; color: var(--text); }
+.dash-qa-time { font-size: 11.5px; color: var(--text-muted); }
+.dash-qa-text {
+  display: block;
+  font-size: 12.5px;
+  color: var(--text-muted);
+  line-height: 1.6;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dash-empty {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  text-align: center;
+  color: var(--text-muted);
+}
+.dash-empty i { font-size: 26px; color: #d4dbe6; }
+.dash-empty p { margin: 10px 0 0; font-size: 13px; }
+
+@media (max-width: 1200px) {
+  .dash-metrics { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+@media (max-width: 980px) {
+  .dash-hero { grid-template-columns: minmax(0, 1fr); }
+  /* 窄屏两栏改上下排，这时别再撑满，给个固定高度就好 */
+  .dash-cols { grid-template-columns: minmax(0, 1fr); flex: none; }
+  .dash-order-list,
+  .dash-qa-list,
+  .dash-empty { height: 260px; flex: none; }
+}
+@media (max-width: 900px) {
+  /* 手机上内容本来就长，不用再强撑一屏；.admin-content 的内边距也变了，
+     原来的 88px 换算不再准确 */
+  .dash { min-height: 0; gap: 12px; }
+  .dash-today-value { font-size: 32px; }
+  .dash-bars { min-height: 110px; }
+}
+@media (max-width: 640px) {
+  .dash-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .dash-order-user { display: none; }
+  .dash-todo { padding: 10px 14px; }
+  .dash-panel-head { padding: 13px 14px; }
+  .dash-order, .dash-qa { padding: 10px 14px; }
+  /* 7 根柱子挤在手机宽度里，标签缩一号免得叠字 */
+  .dash-bar-label { font-size: 10px; }
+  .dash-bars { gap: 5px; }
+}

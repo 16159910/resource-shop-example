@@ -1,0 +1,18 @@
+<article class="resource-card">
+  <a class="resource-image" href="/detail/{$item.id}"
+    ><img
+      src="{$item.cover ?: '/static/img/sample-fallback.svg'}"
+      alt="{$item.title}"
+      loading="lazy"
+  /></a>
+  <div class="resource-info">
+    <small>{$item.category_name|default=''}</small>
+    <h3><a href="/detail/{$item.id}">{$item.title}</a></h3>
+    <p>{$item.summary}</p>
+    <div class="resource-bottom">
+      <strong
+        >{if $item.price==0}免费{else}<small>¥</small>{$item.price}{/if}</strong
+      ><a href="/detail/{$item.id}">了解详情 ↗</a>
+    </div>
+  </div>
+</article>

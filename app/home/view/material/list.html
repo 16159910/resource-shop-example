@@ -1,0 +1,88 @@
+{extend name="layout/base" /}{block name="content"}
+<div class="store-container catalog-heading">
+  <span class="eyebrow">RESOURCE INDEX</span>
+  <h1>
+    {if !empty($params.q)}搜索“{$params.q}”{elseif
+    $currentCat}{$currentCat.name}{else}全部资料{/if}<sup>{$result.total}</sup>
+  </h1>
+  <p>把内容整理成目录，让需要的时候更容易找到。</p>
+</div>
+<div class="store-container catalog-layout">
+  <aside class="catalog-sidebar">
+    <h2>资料分类</h2>
+    <a
+      class="{$catNav.activeTop==0?'active':''}"
+      href="/list{if !empty($params.q)}?q={$params.q|urlencode}{/if}"
+      >全部内容 <span>{$catCounts[0]??0}</span></a
+    >{foreach $catNav.tops as $cat}<a
+      class="{$catNav.activeTop==$cat.id?'active':''}"
+      href="/list?category_id={$cat.id}{if !empty($params.q)}&q={$params.q|urlencode}{/if}"
+      >{$cat.name}<span>{$catCounts[$cat.id]??0}</span></a
+    >{/foreach}{foreach $catNav.children as $cat}<a
+      class="catalog-child {$params.category_id==$cat.id?'active':''}"
+      href="/list?category_id={$cat.id}"
+      >{$cat.name}</a
+    >{/foreach}
+    <div class="catalog-tip">
+      <i class="fa-regular fa-bookmark"></i>
+      <h3>还没想好选什么？</h3>
+      <p>从免费示例开始，看看内容是否适合你。</p>
+      <a href="/free">看看免费内容 →</a>
+    </div>
+  </aside>
+  <section class="catalog-content">
+    <div class="catalog-toolbar">
+      <form class="store-search" action="/list">
+        <input
+          type="hidden"
+          name="category_id"
+          value="{$params.category_id}"
+        /><input
+          name="q"
+          value="{$params.q}"
+          placeholder="搜索标题或关键词"
+          aria-label="搜索资料"
+        /><button aria-label="搜索">
+          <i class="fa-solid fa-magnifying-glass"></i>
+        </button>
+      </form>
+      <nav aria-label="排序方式">
+        <a
+          href="?{:http_build_query(array_merge($params,['sort'=>'newest']))}"
+          class="{$params.sort=='newest'||empty($params.sort)?'active':''}"
+          >最新</a
+        ><a
+          href="?{:http_build_query(array_merge($params,['sort'=>'hot']))}"
+          class="{$params.sort=='hot'?'active':''}"
+          >热门</a
+        ><a
+          href="?{:http_build_query(array_merge($params,['sort'=>'price']))}"
+          class="{$params.sort=='price'?'active':''}"
+          >价格</a
+        >
+      </nav>
+    </div>
+    <div class="resource-grid catalog-grid">
+      {foreach $result.list as $item}{include file="material/card" item=$item
+      /}{/foreach}
+    </div>
+    {if empty($result.list)}
+    <div class="store-empty">
+      <h2>还没有找到相关内容</h2>
+      <p>换一个关键词，或者看看全部资料。</p>
+      <a href="/list" class="button">查看全部资料</a>
+    </div>
+    {/if}
+    <div class="catalog-pagination">
+      {if $result.page>1}<a
+        href="?{:http_build_query(array_merge($params,['page'=>$result.page-1]))}"
+        >← 上一页</a
+      >{/if}<span>第 {$result.page} 页</span>{if
+      $result.page*$result.pageSize<$result.total}<a
+        href="?{:http_build_query(array_merge($params,['page'=>$result.page+1]))}"
+        >下一页 →</a
+      >{/if}
+    </div>
+  </section>
+</div>
+{/block}

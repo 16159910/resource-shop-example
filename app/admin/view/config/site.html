@@ -1,0 +1,77 @@
+{extend name="layout/base" /}{block name="content"}
+<div id="settings-app" class="share-settings" v-cloak>
+  <div class="admin-share-intro">
+    <div>
+      <h2>网站配置</h2>
+      <p>品牌、联系方式与交付设置，集中整理。</p>
+    </div>
+  </div>
+  <fieldset>
+    <legend>站点信息</legend>
+    <div class="share-editor">
+      <label
+        v-for="field in baseFields"
+        :class="field[0]=='site_description'?'wide':''"
+        >[[ field[1] ]]<input
+          class="form-input"
+          v-model="cfg[field[0]]"
+          :placeholder="field[2]||''"
+      /></label>
+    </div>
+  </fieldset>
+  <fieldset>
+    <legend>联系与内容保护</legend>
+    <div class="share-editor">
+      <label
+        >客服微信<input
+          class="form-input"
+          v-model="cfg.default_wechat" /></label
+      ><label
+        >客服二维码地址<input
+          class="form-input"
+          v-model="cfg.default_wechat_qr" /></label
+      ><label
+        >水印文字<input
+          class="form-input"
+          v-model="cfg.watermark_text" /></label
+      ><label
+        >水印不透明度（0—100）<input
+          class="form-input"
+          v-model="cfg.watermark_opacity"
+          type="number"
+          min="0"
+          max="100"
+      /></label>
+    </div>
+  </fieldset>
+  <fieldset>
+    <legend>邮件发送</legend>
+    <div class="share-editor">
+      <label v-for="field in mailFields"
+        >[[ field[1] ]]<input
+          class="form-input"
+          v-model="cfg[field[0]]"
+          :type="field[0]=='smtp_pass'?'password':'text'"
+          autocomplete="off"
+      /></label>
+    </div>
+  </fieldset>
+  <fieldset>
+    <legend>订单通知</legend>
+    <label
+      >企业微信机器人地址<input
+        class="form-input"
+        v-model="cfg.wecom_webhook"
+        autocomplete="off"
+        placeholder="填写你自己的通知地址"
+    /></label>
+  </fieldset>
+  <button class="btn-primary" @click="save" :disabled="saving">
+    [[saving?'保存中…':'保存配置']]
+  </button>
+</div>
+{/block}{block name="js"}
+<script>
+  Vue.createApp({delimiters:['[[',']]'],data:()=>({cfg:{:json_encode($config, JSON_UNESCAPED_UNICODE)},saving:false,baseFields:[['site_name','网站名称','资料小铺'],['site_footer','页脚文字'],['site_keywords','搜索关键词'],['site_icp','备案信息'],['site_description','网站简介'],['site_logo','Logo 地址'],['site_favicon','网站图标地址']],mailFields:[['smtp_host','SMTP 服务器'],['smtp_port','SMTP 端口'],['smtp_user','邮件账号'],['smtp_pass','邮件授权码'],['smtp_from_name','发件人名称']]}),methods:{async save(){this.saving=true;const r=await BizHelper.request('/admin/config/site',this.cfg);this.saving=false;BizHelper.toast(r.code===0?'配置已保存':r.msg,r.code===0?'success':'error');}}}).mount('#settings-app');
+</script>
+{/block}

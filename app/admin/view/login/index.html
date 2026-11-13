@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>管理后台 - {$siteConfig.site_name|default='资料小铺'}</title>
+    <link
+      rel="stylesheet"
+      href="/static/css/share-admin.css?v={:filemtime(public_path() . 'static/css/share-admin.css')}"
+    />
+  </head>
+  <body class="share-login">
+    <section class="share-login-art">
+      <small>RESOURCE SHOP / ADMIN</small>
+      <h1>整理内容，<br />也整理好每一次<br />被发现的机会。</h1>
+      <p>一个安静、清晰的数字资料工作台。</p>
+    </section>
+    <main class="share-login-form">
+      <h2>{$siteConfig.site_name|default='资料小铺'}</h2>
+      <p>欢迎回来，登录后开始管理你的内容。</p>
+      <form id="login-form">
+        <label
+          >管理员账号<input
+            name="username"
+            autocomplete="username"
+            required
+            placeholder="请输入管理员账号" /></label
+        ><label
+          >登录密码<input
+            name="password"
+            type="password"
+            autocomplete="current-password"
+            required
+            placeholder="请输入密码"
+        /></label>
+        <p class="share-login-error" id="login-error"></p>
+        <button>登录工作台 →</button>
+      </form>
+      <a href="/">← 返回资料商店</a>
+    </main>
+    <script>
+      window.CSRF_TOKEN = '{:session("__token__") ?: token()}';
+      document.getElementById("login-form").onsubmit = async function (event) {
+        event.preventDefault();
+        const button = this.querySelector("button");
+        button.disabled = true;
+        try {
+          const r = await (
+            await fetch("/admin/login", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                "X-CSRF-TOKEN": window.CSRF_TOKEN,
+              },
+              body: JSON.stringify(Object.fromEntries(new FormData(this))),
+            })
+          ).json();
+          if (r.code === 0) location.href = "/admin";
+          else document.getElementById("login-error").textContent = r.msg;
+        } catch (error) {
+          document.getElementById("login-error").textContent =
+            "暂时无法登录，请稍后重试";
+        } finally {
+          button.disabled = false;
+        }
+      };
+    </script>
+  </body>
+</html>

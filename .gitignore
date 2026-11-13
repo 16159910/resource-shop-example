@@ -1,0 +1,16 @@
+/.env
+/.env.*
+!/.env.example
+/vendor/
+/runtime/*
+!/runtime/.gitkeep
+/public/uploads/*
+!/public/uploads/samples/
+/protected/*
+!/protected/samples/
+/protected/certs/
+/.DS_Store
+**/.DS_Store
+*.log
+*.zip
+!/protected/samples/*.zip

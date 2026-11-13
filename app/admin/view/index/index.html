@@ -1,0 +1,75 @@
+{extend name="layout/base" /}{block name="content"}
+<div class="admin-share-intro">
+  <div>
+    <h2>内容与订单，一目了然</h2>
+    <p>今天也是把好内容整理清楚的一天。</p>
+  </div>
+  <a href="/admin/material/create" class="btn-primary">＋ 上架一份资料</a>
+</div>
+<div class="admin-share-stats">
+  <div><span>今日收入</span><strong>¥{$today.income}</strong></div>
+  <div><span>在售资料</span><strong>{$overview.material}</strong></div>
+  <div><span>注册用户</span><strong>{$overview.user}</strong></div>
+  <div><span>已支付订单</span><strong>{$overview.order}</strong></div>
+</div>
+<div class="admin-share-grid">
+  <section class="share-panel">
+    <h3>最近七天 · 收入趋势</h3>
+    <div class="share-bars">
+      {foreach $trend.list as $day}
+      <div>
+        <small>¥{$day.total}</small><i style="height:{$day.percent}%"></i
+        ><small>{$day.label}</small>
+      </div>
+      {/foreach}
+    </div>
+  </section>
+  <section class="share-panel">
+    <h3>需要关注的事情</h3>
+    <ul class="share-list">
+      <li>
+        <p>待回复问题 <b>{$todo.question}</b></p>
+        <a href="/admin/config/question"><small>去查看用户反馈 →</small></a>
+      </li>
+      <li>
+        <p>待支付订单 <b>{$todo.unpaid}</b></p>
+        <a href="/admin/order"><small>查看订单进度 →</small></a>
+      </li>
+      <li>
+        <p>累计收入 ¥{$overview.income}</p>
+        <small>本周收入 ¥{$today.week} / 本月收入 ¥{$today.month}</small>
+      </li>
+    </ul>
+  </section>
+</div>
+<section class="share-panel">
+  <h3>最近成交</h3>
+  <div class="share-table-wrap">
+    <table class="biz-table">
+      <thead>
+        <tr>
+          <th>订单</th>
+          <th>内容</th>
+          <th>用户</th>
+          <th>金额</th>
+          <th>时间</th>
+        </tr>
+      </thead>
+      <tbody>
+        {foreach $recentOrders as $order}
+        <tr>
+          <td>{$order.order_no}</td>
+          <td>{$order.title}</td>
+          <td>{$order.user_label}</td>
+          <td>¥{$order.amount}</td>
+          <td>{$order.time_label}</td>
+        </tr>
+        {/foreach}
+      </tbody>
+    </table>
+    {if empty($recentOrders)}
+    <p class="share-page-note">还没有成交记录。</p>
+    {/if}
+  </div>
+</section>
+{/block}

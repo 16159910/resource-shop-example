@@ -1,0 +1,110 @@
+{extend name="layout/base" /}
+
+{block name="content"}
+<div class="home-container" style="padding:80px 16px;">
+  <div class="pay-result-wrap">
+    {if $success}
+    <div class="pay-result-icon success">
+      <i class="fa-solid fa-circle-check"></i>
+    </div>
+    <div class="pay-result-title">支付成功！</div>
+    <div class="pay-result-sub">{if !empty($deliveries)}资料已发放，现在即可获取。{elseif !$isOwner}请登录下单时使用的账号，在「我的资料」中获取。{else}订单已完成，可继续浏览更多资料。{/if}</div>
+    {if !empty($order)}
+    <div class="pay-result-order">订单号：{$order.order_no}</div>
+    {/if}
+
+    {if !empty($deliveries)}
+    <div class="pay-goods-list">
+      <div class="pay-goods-cap">
+        <i class="fa-solid fa-box-open"></i>
+        共 {:count($deliveries)} 份资料，点击下方按钮获取
+      </div>
+
+      {volist name="deliveries" id="d"}
+      <div class="pay-goods-item">
+        <div class="pay-goods-title">{$d.title}</div>
+        <div class="pay-goods-get">
+          {if $d.type == 'pan'}
+          <a href="{$d.url}" target="_blank" rel="noopener" class="pay-goods-btn pan">
+            <i class="fa-solid fa-cloud-arrow-down"></i> 打开网盘
+          </a>
+          {if !empty($d.code)}
+          <span class="pay-code-box">
+            <span class="pay-code-label">提取码</span>
+            <b class="pay-code-val">{$d.code}</b>
+            <button type="button" class="pay-code-copy" data-code="{$d.code}" onclick="copyCode(this)">复制</button>
+          </span>
+          {/if}
+          {else}
+          <a href="{$d.url}" class="pay-goods-btn file">
+            <i class="fa-solid fa-download"></i> 下载资料
+          </a>
+          {/if}
+        </div>
+      </div>
+      {/volist}
+    </div>
+    {/if}
+
+    <div class="pay-result-actions">
+      {if !empty($deliveries)}
+        <a href="/user/center" class="btn-primary">去「我的资料」</a>
+        <a href="/list" class="btn-default">继续逛逛</a>
+      {elseif $success && !$isOwner}
+        <a href="/user/center" class="btn-primary">去「我的资料」查看</a>
+        <a href="/" class="btn-default">继续浏览</a>
+      {else}
+        <a href="/" class="btn-primary">继续浏览</a>
+      {/if}
+    </div>
+    {else}
+    <div class="pay-result-icon pending">
+      <i class="fa-solid fa-clock"></i>
+    </div>
+    <div class="pay-result-title">支付处理中</div>
+    <div class="pay-result-sub">如已完成支付，资料将在几分钟内发放，请稍候查看个人中心</div>
+    {if !empty($order)}
+    <div class="pay-result-order">订单号：{$order.order_no}</div>
+    {/if}
+    <div class="pay-result-actions">
+      <a href="/user/center" class="btn-primary">查看订单</a>
+      <a href="/" class="btn-default" style="margin-left:12px;">返回首页</a>
+    </div>
+    {/if}
+  </div>
+</div>
+{/block}
+
+{block name="css"}
+<link rel="stylesheet" href="/static/css/home/pay.css?v=20261015">
+{/block}
+
+{block name="js"}
+<script>
+function copyCode(btn) {
+  const code = btn.dataset.code;
+  const done = () => {
+    const old = btn.textContent;
+    btn.textContent = '已复制';
+    btn.classList.add('copied');
+    setTimeout(() => { btn.textContent = old; btn.classList.remove('copied'); }, 1500);
+  };
+  const fallback = () => {
+    // http 环境或剪贴板权限被拒时退回 execCommand
+    const ta = document.createElement('textarea');
+    ta.value = code;
+    ta.style.position = 'fixed';
+    ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.select();
+    try { document.execCommand('copy'); done(); } catch (e) {}
+    document.body.removeChild(ta);
+  };
+  if (navigator.clipboard && window.isSecureContext) {
+    navigator.clipboard.writeText(code).then(done).catch(fallback);
+  } else {
+    fallback();
+  }
+}
+</script>
+{/block}

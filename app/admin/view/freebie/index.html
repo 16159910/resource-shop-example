@@ -1,0 +1,305 @@
+{extend name="layout/base" /}
+{block name="content"}
+<div id="app" v-cloak>
+
+  <div class="admin-card">
+    <div class="biz-toolbar">
+      <span style="font-weight:600;font-size:14px;">免费资料</span>
+      <div class="spacer"></div>
+      <button class="btn-primary" @click="openAdd"><i class="fa-solid fa-plus"></i> 新增免费资料</button>
+    </div>
+    <div style="padding:0 20px 20px;">
+      <div v-if="loading" class="biz-loading"></div>
+      <template v-else>
+        <table class="biz-table" v-if="list.length">
+          <thead>
+            <tr>
+              <th style="width:70px">封面</th>
+              <th>标题</th>
+              <th style="width:120px">领取方式</th>
+              <th>领取条件</th>
+              <th style="width:80px">已领取</th>
+              <th style="width:80px">状态</th>
+              <th style="width:60px">排序</th>
+              <th style="width:210px">操作</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="item in list" :key="item.id">
+              <td><img v-if="item.cover" :src="item.cover" style="width:48px;height:48px;border-radius:6px;object-fit:cover;"><span v-else style="color:var(--text-muted)">-</span></td>
+              <td style="font-weight:600;">[[ item.title ]]</td>
+              <td><span :class="'badge ' + typeMap[item.claim_type].badge">[[ typeMap[item.claim_type].label ]]</span></td>
+              <td style="color:var(--text-muted);font-size:13px;">[[ item.condition_text ]]</td>
+              <td>[[ item.claim_count ]]<span v-if="item.claim_type == 2" style="color:var(--text-muted);font-size:12px;"> 自报</span></td>
+              <td><span :class="item.status==1?'badge badge-success':'badge badge-default'">[[ item.status==1?'上架':'下架' ]]</span></td>
+              <td>[[ item.sort ]]</td>
+              <td>
+                <button class="biz-btn biz-btn-edit" @click="openEdit(item)"><i class="fa-solid fa-pen-to-square"></i> 编辑</button>
+                <button class="biz-btn" @click="toggle(item)">[[ item.status==1 ? '下架' : '上架' ]]</button>
+                <button class="biz-btn biz-btn-del" @click="del(item)"><i class="fa-solid fa-trash-can"></i> 删除</button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+        <div v-else class="biz-empty"><i class="fa-solid fa-gift"></i><p>还没有免费资料，点击右上角新增</p></div>
+      </template>
+    </div>
+  </div>
+
+  <!-- 新增/编辑弹窗 -->
+  <div class="modal-mask" v-if="modal.show">
+    <div class="modal-box" style="width:720px;">
+      <div class="modal-header">
+        <span>[[ modal.id ? '编辑免费资料' : '新增免费资料' ]]</span>
+        <button class="modal-close" @click="modal.show=false"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <div class="modal-body" style="max-height:70vh;overflow-y:auto;">
+
+        <fieldset class="biz-fieldset">
+          <legend><i class="fa-solid fa-circle-info"></i> 基本信息</legend>
+          <div class="form-item">
+            <div class="form-item-label required">标题</div>
+            <div class="form-item-content"><input class="form-input" v-model="modal.title" maxlength="200" placeholder="如：班主任开学第一周工作清单"></div>
+          </div>
+          <div class="form-item">
+            <div class="form-item-label">封面</div>
+            <div class="form-item-content" style="display:flex;align-items:center;gap:12px;">
+              <img v-if="modal.cover" :src="modal.cover" style="width:72px;height:72px;border-radius:8px;object-fit:cover;">
+              <label class="btn-default" style="cursor:pointer;"><i class="fa-solid fa-image"></i> [[ modal.cover ? '更换封面' : '上传封面' ]]
+                <input type="file" accept="image/*" style="display:none" @change="uploadImage('cover', $event)">
+              </label>
+              <span class="form-hint" style="margin:0;">建议正方形</span>
+            </div>
+          </div>
+          <div class="form-item">
+            <div class="form-item-label">简介</div>
+            <div class="form-item-content"><textarea class="form-textarea" v-model="modal.summary" maxlength="500" placeholder="一两句话说明这份资料是什么、对谁有用"></textarea></div>
+          </div>
+        </fieldset>
+
+        <fieldset class="biz-fieldset">
+          <legend><i class="fa-solid fa-key"></i> 领取方式</legend>
+          <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px;">
+            <div v-for="(t, k) in typeMap" :key="k" @click="modal.claim_type = Number(k)"
+                 :style="'cursor:pointer;padding:12px;border-radius:10px;border:2px solid ' + (modal.claim_type == k ? 'var(--primary)' : 'var(--border)') + ';background:' + (modal.claim_type == k ? 'var(--primary-light)' : '#fff')">
+              <div style="font-weight:600;font-size:14px;">[[ t.label ]]</div>
+              <div style="font-size:12px;color:var(--text-muted);margin-top:4px;line-height:1.5;">[[ t.desc ]]</div>
+            </div>
+          </div>
+
+          <!-- 公众号 -->
+          <template v-if="modal.claim_type == 2">
+            <div class="biz-form-2col">
+              <div class="form-item">
+                <div class="form-item-label">公众号名称</div>
+                <div class="form-item-content"><input class="form-input" v-model="modal.mp_name" placeholder="如：{$siteConfig.site_name|default='资料小铺'}"></div>
+              </div>
+              <div class="form-item">
+                <div class="form-item-label required">回复关键词</div>
+                <div class="form-item-content"><input class="form-input" v-model="modal.mp_keyword" maxlength="50" placeholder="如：开学清单"></div>
+              </div>
+            </div>
+            <div class="form-item">
+              <div class="form-item-label required">公众号二维码</div>
+              <div class="form-item-content" style="display:flex;align-items:center;gap:12px;">
+                <img v-if="modal.mp_qr" :src="modal.mp_qr" style="width:96px;height:96px;border-radius:8px;object-fit:cover;">
+                <label class="btn-default" style="cursor:pointer;"><i class="fa-solid fa-qrcode"></i> [[ modal.mp_qr ? '更换二维码' : '上传二维码' ]]
+                  <input type="file" accept="image/*" style="display:none" @change="uploadImage('mp_qr', $event)">
+                </label>
+              </div>
+              <div class="form-hint" style="color:#f59e0b;">记得到公众号后台「自动回复 → 关键词回复」里配置同样的关键词和资料链接，否则用户发了没反应。</div>
+            </div>
+          </template>
+
+          <!-- 购买指定资料 -->
+          <div class="form-item" v-if="modal.claim_type == 3">
+            <div class="form-item-label required">需要购买的资料（买过任意一份即可领取）</div>
+            <div class="form-item-content">
+              <input class="form-input" v-model="kw" placeholder="搜索资料标题" style="margin-bottom:8px;">
+              <div style="max-height:200px;overflow-y:auto;border:1px solid var(--border);border-radius:8px;padding:8px 12px;">
+                <label v-for="m in filteredMaterials" :key="m.id" style="display:flex;align-items:center;gap:8px;padding:5px 0;font-size:13px;cursor:pointer;">
+                  <input type="checkbox" :value="m.id" v-model="modal.need_material_ids"> [[ m.title ]]
+                </label>
+                <div v-if="!filteredMaterials.length" style="color:var(--text-muted);font-size:13px;">没有匹配的资料</div>
+              </div>
+              <div class="form-hint">已选 [[ modal.need_material_ids.length ]] 份</div>
+            </div>
+          </div>
+
+          <!-- 订单满 N 单 -->
+          <div class="form-item" v-if="modal.claim_type == 4">
+            <div class="form-item-label required">需要的已支付订单数</div>
+            <div class="form-item-content">
+              <div class="biz-spinner">
+                <button class="biz-spinner-btn" @click="modal.need_order_count > 1 ? modal.need_order_count-- : null">−</button>
+                <input type="number" class="biz-spinner-input" v-model.number="modal.need_order_count" min="1">
+                <button class="biz-spinner-btn" @click="modal.need_order_count++">+</button>
+              </div>
+              <div class="form-hint">只算金额大于 0 的已支付订单</div>
+            </div>
+          </div>
+
+          <div class="form-item">
+            <div class="form-item-label">补充说明</div>
+            <div class="form-item-content"><input class="form-input" v-model="modal.claim_tip" maxlength="255" placeholder="选填，显示在小程序领取页，如：每人限领一次，领取后 7 天内有效"></div>
+          </div>
+        </fieldset>
+
+        <!-- 发放内容：公众号方式由公众号自动回复，不需要 -->
+        <fieldset class="biz-fieldset" v-if="modal.claim_type != 2">
+          <legend><i class="fa-solid fa-box-open"></i> 发放内容（网盘、文件至少填一项）</legend>
+          <div class="biz-form-2col">
+            <div class="form-item">
+              <div class="form-item-label">网盘链接</div>
+              <div class="form-item-content"><input class="form-input" v-model="modal.pan_url" placeholder="https://pan.baidu.com/..."></div>
+            </div>
+            <div class="form-item">
+              <div class="form-item-label">提取码</div>
+              <div class="form-item-content"><input class="form-input" v-model="modal.pan_code" placeholder="留空则无需提取码"></div>
+            </div>
+          </div>
+          <div class="form-item">
+            <div class="form-item-label">资料文件</div>
+            <div class="form-item-content" style="display:flex;align-items:center;gap:12px;">
+              <span v-if="modal.file_path" style="font-size:13px;">[[ modal.file_name ]]（[[ BizHelper.formatSize(modal.file_size) ]]）</span>
+              <label class="btn-default" style="cursor:pointer;"><i class="fa-solid fa-upload"></i> [[ uploading ? '上传中…' : (modal.file_path ? '重新上传' : '上传文件') ]]
+                <input type="file" style="display:none" @change="uploadFile" :disabled="uploading">
+              </label>
+              <button v-if="modal.file_path" class="biz-btn biz-btn-del" @click="modal.file_path='';modal.file_name='';modal.file_size=0"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="form-hint">支持 PDF / Word / Excel / PPT / 压缩包，最大 200MB</div>
+          </div>
+        </fieldset>
+
+        <div class="biz-form-2col">
+          <div class="form-item">
+            <div class="form-item-label">排序</div>
+            <div class="form-item-content">
+              <div class="biz-spinner">
+                <button class="biz-spinner-btn" @click="modal.sort > 0 ? modal.sort-- : null">−</button>
+                <input type="number" class="biz-spinner-input" v-model.number="modal.sort" min="0">
+                <button class="biz-spinner-btn" @click="modal.sort++">+</button>
+              </div>
+              <div class="form-hint">数字越小越靠前</div>
+            </div>
+          </div>
+          <div class="form-item">
+            <div class="form-item-label">状态</div>
+            <div class="form-item-content">
+              <label class="form-switch-wrap">
+                <input type="checkbox" :checked="modal.status==1" @change="modal.status=$event.target.checked?1:0">
+                <span class="switch-track"><span class="switch-thumb"></span></span>
+                <span>[[ modal.status==1?'上架':'下架' ]]</span>
+              </label>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-default" @click="modal.show=false">取消</button>
+        <button class="btn-primary" @click="save" :disabled="modal.saving">[[ modal.saving?'保存中…':'保存' ]]</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+{/block}
+
+{block name="js"}
+<script>
+window.FREEBIE_MATERIALS = {:json_encode($materials, JSON_UNESCAPED_UNICODE)};
+</script>
+<script>
+const EMPTY_FREEBIE = {
+  id: 0, title: '', cover: '', summary: '', claim_type: 1, need_material_ids: [], need_order_count: 1,
+  mp_name: '', mp_qr: '', mp_keyword: '', claim_tip: '',
+  pan_url: '', pan_code: '', file_path: '', file_name: '', file_size: 0, sort: 0, status: 1
+};
+_createAdminApp({
+  delimiters: ['[[', ']]'],
+  data() {
+    return {
+      list: [], loading: true, uploading: false, kw: '',
+      materials: window.FREEBIE_MATERIALS || [],
+      typeMap: {
+        1: { label: '直接领取', badge: 'badge-success', desc: '登录后一键领取' },
+        2: { label: '公众号领取', badge: 'badge-primary', desc: '关注公众号发关键词' },
+        3: { label: '购买指定资料', badge: 'badge-warning', desc: '买过任意一份可领' },
+        4: { label: '订单满 N 单', badge: 'badge-danger', desc: '已支付订单达标可领' }
+      },
+      modal: { show: false, saving: false, ...EMPTY_FREEBIE }
+    };
+  },
+  computed: {
+    filteredMaterials() {
+      const k = this.kw.trim();
+      return k ? this.materials.filter(m => m.title.indexOf(k) > -1) : this.materials;
+    }
+  },
+  mounted() { this.load(); },
+  methods: {
+    async load() {
+      this.loading = true;
+      const r = await BizHelper.get('/admin/freebie/list');
+      this.list = r.data || [];
+      this.loading = false;
+    },
+    openAdd() {
+      this.kw = '';
+      Object.assign(this.modal, { show: true, saving: false, ...EMPTY_FREEBIE, need_material_ids: [] });
+    },
+    openEdit(item) {
+      this.kw = '';
+      const data = {};
+      Object.keys(EMPTY_FREEBIE).forEach(k => { data[k] = item[k] ?? EMPTY_FREEBIE[k]; });
+      Object.assign(this.modal, { show: true, saving: false, ...data, need_material_ids: [...(item.need_material_ids || [])] });
+    },
+    async uploadImage(field, e) {
+      const file = e.target.files[0];
+      if (!file) return;
+      const fd = new FormData();
+      fd.append('file', file);
+      const r = await fetch('/admin/material/upload/cover', { method: 'POST', body: fd, headers: { 'X-CSRF-TOKEN': window.CSRF_TOKEN || '' } });
+      const data = await r.json();
+      if (data.code === 0) this.modal[field] = data.data.url;
+      else BizHelper.toast(data.msg, 'error');
+      e.target.value = '';
+    },
+    async uploadFile(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+      this.uploading = true;
+      const fd = new FormData();
+      fd.append('file', file);
+      const r = await fetch('/admin/material/upload/file', { method: 'POST', body: fd, headers: { 'X-CSRF-TOKEN': window.CSRF_TOKEN || '' } });
+      const data = await r.json();
+      this.uploading = false;
+      if (data.code === 0) Object.assign(this.modal, { file_path: data.data.path, file_name: data.data.name, file_size: data.data.size });
+      else BizHelper.toast(data.msg, 'error');
+      e.target.value = '';
+    },
+    async save() {
+      if (!this.modal.title.trim()) return BizHelper.toast('请填写标题', 'error');
+      this.modal.saving = true;
+      const { show, saving, ...payload } = this.modal;
+      const r = await BizHelper.request('/admin/freebie/save', payload);
+      this.modal.saving = false;
+      if (r.code === 0) { BizHelper.toast('保存成功'); this.modal.show = false; this.load(); }
+      else BizHelper.toast(r.msg || '保存失败', 'error');
+    },
+    async toggle(item) {
+      const r = await BizHelper.request('/admin/freebie/status', { id: item.id, status: item.status == 1 ? 0 : 1 });
+      if (r.code === 0) { BizHelper.toast(item.status == 1 ? '已下架' : '已上架'); this.load(); }
+      else BizHelper.toast(r.msg || '操作失败', 'error');
+    },
+    async del(item) {
+      const ok = await BizHelper.confirm(`确定要删除「${item.title}」吗？领取记录也会一起删除。`);
+      if (!ok) return;
+      const r = await BizHelper.request('/admin/freebie/delete', { id: item.id });
+      if (r.code === 0) { BizHelper.toast('已删除'); this.load(); }
+      else BizHelper.toast(r.msg || '删除失败', 'error');
+    }
+  }
+}).mount('#app');
+</script>
+{/block}

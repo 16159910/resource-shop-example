@@ -1,0 +1,84 @@
+{extend name="layout/base" /} {block name="content"}
+<section class="store-hero store-container">
+  <div class="hero-editorial">
+    <span class="eyebrow">THE RESOURCE EDIT · 01</span>
+    <h1>把需要的灵感，<br />放进你的资料夹<span>。</span></h1>
+    <p>
+      从一张计划表，到一次活动的完整思路。找一点新方法，也为日常留一点从容。
+    </p>
+    <form class="store-search" action="/list">
+      <i class="fa-solid fa-magnifying-glass"></i
+      ><input
+        name="q"
+        aria-label="搜索资料"
+        placeholder="试试搜索：计划、阅读、旅行"
+      /><button>去发现 ↗</button>
+    </form>
+    <div class="hero-metrics">
+      <span><b>{$resourceCount}</b> 份精选资料</span
+      ><span><b>{:count($categories)}</b> 个灵感分类</span
+      ><a href="/free">先领取免费示例 ↗</a>
+    </div>
+  </div>
+  <div class="hero-feature">
+    {if $featured}
+    <div class="feature-note">
+      <span>本期精选</span><i class="fa-solid fa-arrow-down"></i>
+    </div>
+    <a href="/detail/{$featured.id}" class="feature-book"
+      ><img src="{$featured.cover}" alt="{$featured.title}"
+    /></a>
+    <div class="feature-caption">
+      <div>
+        <small>TAKE A CLOSER LOOK</small>
+        <h2>{$featured.title}</h2>
+      </div>
+      <a href="/detail/{$featured.id}" aria-label="查看精选资料">↗</a>
+    </div>
+    {/if}
+  </div>
+</section>
+<section class="store-categories store-container">
+  <span class="eyebrow">按兴趣挑选</span>
+  <div>
+    {foreach $categories as $cat}{if empty($cat.parent_id)}<a
+      href="/list?category_id={$cat.id}"
+      >{$cat.name}<span>↗</span></a
+    >{/if}{/foreach}
+  </div>
+</section>
+<section class="store-container store-collection">
+  <div class="collection-heading">
+    <div>
+      <span class="eyebrow">THE COLLECTION</span>
+      <h2>一些值得收藏的小工具</h2>
+    </div>
+    <a href="/list">查看全部资料 →</a>
+  </div>
+  <div class="resource-grid">
+    {foreach $products as $item}{include file="material/card" item=$item
+    /}{/foreach}
+  </div>
+  {if empty($products)}
+  <div class="store-empty">资料正在准备中，稍后再来看看。</div>
+  {/if}
+</section>
+<section class="store-container store-how">
+  <span class="eyebrow">从发现到拥有</span>
+  <div>
+    <b>01</b>
+    <h3>找一份需要的内容</h3>
+    <p>按分类浏览，也可以用关键词搜索。</p>
+  </div>
+  <div>
+    <b>02</b>
+    <h3>先看看，再决定</h3>
+    <p>介绍、目录和预览图，帮你了解内容。</p>
+  </div>
+  <div>
+    <b>03</b>
+    <h3>在资料夹里随时找回</h3>
+    <p>获取后从「我的资料」重新下载。</p>
+  </div>
+</section>
+{/block}

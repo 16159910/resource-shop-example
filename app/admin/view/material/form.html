@@ -1,0 +1,558 @@
+{extend name="layout/base" /}
+{block name="content"}
+<script>
+window.MATERIAL = {:json_encode($material??null, JSON_UNESCAPED_UNICODE)};
+window.CATEGORIES = {:json_encode($categories, JSON_UNESCAPED_UNICODE)};
+// 分类按层级排：顶级分类后面紧跟它的子分类，子分类写成「上级 / 子级」
+function categoryTreeOpts(cats) {
+  const out = [];
+  cats.filter(c => !Number(c.parent_id)).forEach(t => {
+    out.push({ value: t.id, label: t.name });
+    cats.filter(c => Number(c.parent_id) === Number(t.id)).forEach(c => out.push({ value: c.id, label: t.name + ' / ' + c.name }));
+  });
+  return out;
+}
+</script>
+<div id="app" v-cloak>
+  <div class="form-layout">
+    <!-- 左侧主表单 -->
+    <div style="flex:1;min-width:0;">
+      <div class="admin-card">
+        <div class="admin-card-header">
+          <i class="fa-solid fa-circle-info" style="color:var(--primary)"></i>
+          <h3>基本信息</h3>
+        </div>
+        <div class="admin-card-body">
+          <div class="form-item">
+            <div class="form-item-label">商品类型</div>
+            <biz-select v-model="form.goods_type" :options="goodsTypeOpts" :full="true"></biz-select>
+            <div class="form-hint" v-if="form.goods_type == 2">卡密商品：用户付款后自动从「卡密仓库」发一张卡密，并显示使用地址和说明。</div>
+          </div>
+          <div class="form-item">
+            <div class="form-item-label required">资料标题</div>
+            <input class="form-input" v-model="form.title" placeholder="请输入资料标题，建议包含年级和科目" maxlength="200">
+          </div>
+          <div class="form-row">
+            <div class="form-item">
+              <div class="form-item-label required">所属分类</div>
+              <biz-select v-model="form.category_id" :options="categoryOpts" placeholder="请选择分类" :full="true"></biz-select>
+            </div>
+          </div>
+          <div class="form-item">
+            <div class="form-item-label">简介摘要</div>
+            <textarea class="form-textarea" v-model="form.summary" placeholder="一两句话描述资料特点，显示在列表页" maxlength="500"></textarea>
+          </div>
+          <div class="form-item">
+            <div class="form-item-label">详情介绍</div>
+            <div id="quill-editor" style="min-height:160px;border:1px solid var(--border);border-radius:6px;"></div>
+          </div>
+          <div class="form-item">
+            <div class="form-item-label">标签</div>
+            <div class="tag-input-wrap">
+              <span class="tag-chip" v-for="(tag, i) in tagList" :key="i">
+                [[ tag ]]<button class="tag-chip-del" @click="tagList.splice(i,1)" type="button">×</button>
+              </span>
+              <input class="tag-input" ref="tagInput" v-model="tagInputVal"
+                placeholder="输入后按回车添加"
+                @keydown.enter.prevent="addTag"
+                @keydown.188.prevent="addTag"
+                @blur="addTag">
+            </div>
+            <div class="form-hint">按回车或逗号添加标签，点击 × 删除</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 目录 -->
+      <div class="admin-card">
+        <div class="admin-card-header catalog-header" @click="catalogOpen = !catalogOpen">
+          <i class="fa-solid fa-list-ol" style="color:var(--primary)"></i>
+          <h3>资料目录</h3>
+          <span class="catalog-count" v-if="catalog.length">共 [[ catalog.length ]] 条</span>
+          <span class="catalog-toggle">
+            [[ catalogOpen ? '收起' : '展开编辑' ]]
+            <i class="fa-solid fa-chevron-down" :class="{ 'is-open': catalogOpen }"></i>
+          </span>
+        </div>
+        <div class="admin-card-body" style="padding:0" v-show="catalogOpen">
+          <div class="catalog-list">
+            <div class="catalog-item" v-for="(item, idx) in catalog" :key="idx">
+              <i class="fa-solid fa-grip-vertical drag-handle" style="color:var(--text-muted)"></i>
+              <biz-select v-model="item.level" :options="levelOpts" class="catalog-level"></biz-select>
+              <input v-model="item.label" placeholder="第一章" style="flex:0 0 88px">
+              <input v-model="item.title" placeholder="目录标题">
+              <input v-model="item.page" placeholder="页码" style="flex:0 0 70px">
+              <button class="biz-btn biz-btn-del" @click="catalog.splice(idx,1)"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="catalog-add" @click="catalog.push({level:0,label:'',title:'',page:''})">
+              <i class="fa-solid fa-plus"></i> 添加目录项
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 试看页 -->
+      <div class="admin-card">
+        <div class="admin-card-header">
+          <i class="fa-solid fa-eye" style="color:var(--primary)"></i>
+          <h3>试看页面</h3>
+          <span style="font-size:12px;color:var(--text-muted);margin-left:8px">上传后系统自动添加水印</span>
+        </div>
+        <div class="admin-card-body">
+          <div v-if="!materialId" style="color:var(--text-muted);font-size:13px;">
+            <i class="fa-solid fa-circle-info"></i> 请先保存基本信息后再上传试看页面
+          </div>
+          <template v-else>
+            <div class="preview-list">
+              <div class="preview-item" v-for="(p, idx) in previews" :key="p.id">
+                <img :src="p.image_path">
+                <button class="del-btn" @click="delPreview(p.id, idx)"><i class="fa-solid fa-xmark"></i></button>
+              </div>
+              <label class="preview-add" v-if="!uploadingPreview">
+                <i class="fa-solid fa-plus"></i>
+                <span>添加图片</span>
+                <input type="file" accept="image/*" multiple style="display:none" @change="uploadPreview">
+              </label>
+              <div class="preview-add" v-else style="cursor:wait">
+                <i class="fa-solid fa-spinner fa-spin"></i>
+                <span>上传中...</span>
+              </div>
+            </div>
+            <div class="form-hint" style="margin-top:8px">支持 JPG/PNG，建议上传 3-5 张试看页，系统自动加水印保护</div>
+          </template>
+        </div>
+      </div>
+
+      <!-- SEO -->
+      <div class="admin-card">
+        <div class="admin-card-header">
+          <i class="fa-solid fa-magnifying-glass" style="color:var(--primary)"></i>
+          <h3>SEO 设置</h3>
+        </div>
+        <div class="admin-card-body">
+          <div class="form-item">
+            <div class="form-item-label">SEO 标题</div>
+            <input class="form-input" v-model="form.seo_title" placeholder="留空则使用资料标题">
+          </div>
+          <div class="form-item">
+            <div class="form-item-label">SEO 关键词</div>
+            <input class="form-input" v-model="form.seo_keywords" placeholder="逗号分隔">
+          </div>
+          <div class="form-item">
+            <div class="form-item-label">SEO 描述</div>
+            <textarea class="form-textarea" v-model="form.seo_description" placeholder="搜索结果描述文字"></textarea>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 右侧配置 -->
+    <div style="width:300px;flex-shrink:0;">
+      <!-- 封面 -->
+      <div class="admin-card">
+        <div class="admin-card-header">
+          <i class="fa-solid fa-image" style="color:var(--primary)"></i>
+          <h3>封面图</h3>
+        </div>
+        <div class="admin-card-body" style="text-align:center;">
+          <label class="cover-uploader" style="margin:0 auto;cursor:pointer">
+            <img v-if="form.cover" :src="form.cover">
+            <template v-else>
+              <i class="fa-solid fa-camera" style="font-size:28px;color:var(--primary)"></i>
+              <span>点击上传封面</span>
+              <span style="font-size:11px">建议 1:1 方图</span>
+            </template>
+            <input type="file" accept="image/*" style="display:none" @change="uploadCover">
+          </label>
+          <div class="form-hint" style="margin-top:8px">支持 JPG/PNG，建议尺寸 800×800（正方形）<br>小程序和网站都按 1:1 裁切显示，非方图会被裁掉两边</div>
+        </div>
+      </div>
+
+      <!-- 定价 -->
+      <div class="admin-card">
+        <div class="admin-card-header">
+          <i class="fa-solid fa-yen-sign" style="color:var(--primary)"></i>
+          <h3>价格设置</h3>
+        </div>
+        <div class="admin-card-body">
+          <div class="form-item">
+            <div class="form-item-label required">售价（元）</div>
+            <input class="form-input" type="number" v-model.number="form.price" min="0" step="0.01" placeholder="0.00">
+          </div>
+          <div class="form-item">
+            <div class="form-item-label">划线价（元）</div>
+            <input class="form-input" type="number" v-model.number="form.original_price" min="0" step="0.01" placeholder="0.00">
+          </div>
+        </div>
+      </div>
+
+      <!-- 卡密设置：卡密商品才有 -->
+      <div class="admin-card" v-if="form.goods_type == 2">
+        <div class="admin-card-header">
+          <i class="fa-solid fa-key" style="color:var(--primary)"></i>
+          <h3>卡密设置</h3>
+        </div>
+        <div class="admin-card-body">
+          <div class="form-item">
+            <div class="form-item-label">使用地址</div>
+            <input class="form-input" v-model="form.use_url" placeholder="软件网址 / 下载地址，用户拿到卡密后去这里激活">
+          </div>
+          <div class="form-item">
+            <div class="form-item-label">使用说明</div>
+            <textarea class="form-textarea" v-model="form.use_guide" placeholder="例如：打开使用地址 → 注册登录 → 在「激活」页输入卡号"></textarea>
+          </div>
+          <div class="form-hint" v-if="materialId">
+            当前库存 <b>[[ stock ]]</b> 张，<a :href="'/admin/card?material_id=' + materialId" style="color:var(--primary)">去卡密仓库导入 →</a>
+          </div>
+          <div class="form-hint" v-else>保存后到「卡密仓库」导入卡密。</div>
+        </div>
+      </div>
+
+      <!-- 文件信息：小程序详情页展示「667 页内容」「PDF 电子版」 -->
+      <div class="admin-card" v-if="form.goods_type != 2">
+        <div class="admin-card-header">
+          <i class="fa-solid fa-file-lines" style="color:var(--primary)"></i>
+          <h3>文件信息</h3>
+        </div>
+        <div class="admin-card-body">
+          <div class="form-item">
+            <div class="form-item-label">页数</div>
+            <input class="form-input" type="number" v-model.number="form.page_count" min="0" step="1" placeholder="0">
+            <div class="form-hint">填 0 则小程序显示章节数</div>
+          </div>
+          <div class="form-item">
+            <div class="form-item-label">文件格式</div>
+            <biz-select v-model="form.file_format" :options="formatOpts" placeholder="未设置" :full="true"></biz-select>
+          </div>
+        </div>
+      </div>
+
+      <!-- 发货方式：卡密商品不需要 -->
+      <div class="admin-card" v-if="form.goods_type != 2">
+        <div class="admin-card-header">
+          <i class="fa-solid fa-truck" style="color:var(--primary)"></i>
+          <h3>发货方式</h3>
+        </div>
+        <div class="admin-card-body">
+          <div class="form-hint" style="margin-bottom:16px;">
+            两种方式可以同时配置，都填的话用户在获取页自己挑一种。只填一种就只给这一种。
+          </div>
+
+          <!-- 网盘链接 -->
+          <div class="form-section">
+            <div class="form-section-title"><i class="fa-solid fa-cloud"></i> 网盘链接</div>
+            <div class="form-item">
+              <div class="form-item-label">链接地址</div>
+              <input class="form-input" v-model="form.pan_url" placeholder="https://pan.baidu.com/... 留空则不提供网盘方式">
+            </div>
+            <div class="form-item">
+              <div class="form-item-label">提取码</div>
+              <input class="form-input" v-model="form.pan_code" placeholder="留空则无需提取码">
+            </div>
+          </div>
+
+          <!-- 直接下载 -->
+          <div class="form-section">
+            <div class="form-section-title"><i class="fa-solid fa-download"></i> 直接下载</div>
+            <div class="form-item">
+              <label class="file-upload-zone" v-if="!form.file_path">
+                <i class="fa-solid fa-file-arrow-up"></i>
+                <span>点击或拖拽上传文件</span>
+                <span style="font-size:12px">支持 PDF、ZIP、RAR、DOC 等，留空则不提供直接下载</span>
+                <input type="file" style="display:none" @change="uploadFile">
+              </label>
+              <div v-else class="file-info">
+                <i class="fa-solid fa-file-zipper"></i>
+                <span class="file-name">[[ form.file_name ]]</span>
+                <span class="file-size">[[ BizHelper.formatSize(form.file_size) ]]</span>
+                <button class="biz-btn biz-btn-del" @click="form.file_path='';form.file_name='';form.file_size=0" style="flex-shrink:0"><i class="fa-solid fa-xmark"></i></button>
+              </div>
+            </div>
+          </div>
+
+          <div class="form-hint" style="margin-top:14px;color:#f59e0b;" v-if="!form.pan_url && !form.file_path">
+            <i class="fa-solid fa-triangle-exclamation"></i>
+            两种都没配，用户买了之后拿不到资料。
+          </div>
+        </div>
+      </div>
+
+      <!-- 客服 -->
+      <div class="admin-card">
+        <div class="admin-card-header">
+          <i class="fa-brands fa-weixin" style="color:#07c160"></i>
+          <h3>客服微信</h3>
+        </div>
+        <div class="admin-card-body">
+          <div class="form-item">
+            <div class="form-item-label">微信号</div>
+            <input class="form-input" v-model="form.wechat" placeholder="留空则使用网站默认客服微信">
+          </div>
+        </div>
+      </div>
+
+      <!-- 状态 -->
+      <div class="admin-card">
+        <div class="admin-card-header">
+          <i class="fa-solid fa-toggle-on" style="color:var(--primary)"></i>
+          <h3>发布状态</h3>
+        </div>
+        <div class="admin-card-body">
+          <div class="form-row">
+            <div class="form-item">
+              <div class="form-item-label">排序权重</div>
+              <div class="biz-spinner">
+                <button class="biz-spinner-btn" @click="form.sort>0?form.sort--:null">−</button>
+                <input type="number" class="biz-spinner-input" v-model.number="form.sort" min="0">
+                <button class="biz-spinner-btn" @click="form.sort++">+</button>
+              </div>
+            </div>
+          </div>
+          <div class="form-item">
+            <label class="form-switch-wrap">
+              <input type="checkbox" :checked="form.is_hot==1" @change="form.is_hot=$event.target.checked?1:0">
+              <span class="switch-track"><span class="switch-thumb"></span></span>
+              <span>设为热门</span>
+            </label>
+          </div>
+          <div class="form-item">
+            <label class="form-switch-wrap">
+              <input type="checkbox" :checked="form.is_recommend==1" @change="form.is_recommend=$event.target.checked?1:0">
+              <span class="switch-track"><span class="switch-thumb"></span></span>
+              <span>设为推荐</span>
+            </label>
+          </div>
+          <div class="form-item">
+            <label class="form-switch-wrap">
+              <input type="checkbox" :checked="form.is_hidden==1" @change="form.is_hidden=$event.target.checked?1:0">
+              <span class="switch-track"><span class="switch-thumb"></span></span>
+              <span>隐藏资料</span>
+            </label>
+            <div class="form-hint" style="margin-top:6px;">
+              开启后不在商城首页、列表、搜索和推荐里出现，<b>但链接还能正常打开和购买</b>。<br>
+              适合专供某个渠道、或还在试卖的资料。想彻底停售请用「下架」。
+            </div>
+          </div>
+          <div style="display:flex;gap:10px;margin-top:6px;">
+            <button class="btn-default" style="flex:1" @click="saveAs(2)" :disabled="saving">保存草稿</button>
+            <button class="btn-primary" style="flex:1" @click="saveAs(1)" :disabled="saving">
+              <i class="fa-solid fa-spinner fa-spin" v-if="saving"></i>
+              <span v-else>发布上架</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{/block}
+{block name="css"}
+<link href="/static/lib/quill/quill.snow.css" rel="stylesheet">
+<style>
+.tag-input-wrap {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 6px 10px;
+  min-height: 40px;
+  cursor: text;
+}
+.tag-input-wrap:focus-within { border-color: var(--primary); box-shadow: 0 0 0 3px var(--primary-light); }
+.tag-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: var(--primary-light);
+  color: var(--primary);
+  font-size: 12px;
+  padding: 2px 8px;
+  border-radius: 20px;
+  font-weight: 500;
+}
+.tag-chip-del {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--primary);
+  font-size: 14px;
+  line-height: 1;
+  padding: 0;
+}
+.tag-input {
+  border: none;
+  outline: none;
+  flex: 1;
+  min-width: 120px;
+  font-size: 13px;
+  background: transparent;
+}
+.ql-container { font-size: 14px; }
+.ql-editor { min-height: 160px; }
+</style>
+{/block}
+{block name="js"}
+<script src="/static/lib/quill/quill.js"></script>
+<script>
+const _m = window.MATERIAL || {};
+_createAdminApp({
+  delimiters: ['[[',']]'],
+  data() {
+    return {
+      materialId: _m.id || 0,
+      form: {
+        id: _m.id||0, title: _m.title||'', category_id: _m.category_id||'',
+        summary: _m.summary||'', description: _m.description||'',
+        price: _m.price||0, original_price: _m.original_price||0,
+        page_count: _m.page_count||0, file_format: _m.file_format||'',
+        goods_type: _m.goods_type||1, use_url: _m.use_url||'', use_guide: _m.use_guide||'',
+        delivery_type: _m.delivery_type||1, pan_url: _m.pan_url||'', pan_code: _m.pan_code||'',
+        file_path: _m.file_path||'', file_name: _m.file_name||'', file_size: _m.file_size||0,
+        wechat: _m.wechat||'', tags: _m.tags||'',
+        seo_title: _m.seo_title||'', seo_keywords: _m.seo_keywords||'', seo_description: _m.seo_description||'',
+        is_hot: _m.is_hot||0, is_recommend: _m.is_recommend||0, is_hidden: _m.is_hidden||0, sort: _m.sort||0,
+        status: _m.status||2, cover: _m.cover||''
+      },
+      tagList: (_m.tags||'').split(',').map(t=>t.trim()).filter(Boolean),
+      tagInputVal: '',
+      catalog: (_m.catalog ? (typeof _m.catalog==='string' ? JSON.parse(_m.catalog) : _m.catalog) : [])
+        .map(it => ({ level: it.level || 0, label: it.label || '', title: it.title || '', page: it.page || '' })),
+      // 目录动辄几十上百条，默认收起来；还没有目录时直接展开，省得再点一下才能加第一条
+      catalogOpen: !(_m.catalog && (typeof _m.catalog === 'string' ? JSON.parse(_m.catalog) : _m.catalog).length),
+      stock: _m.stock || 0,
+      goodsTypeOpts: [{ value: 1, label: '资料（网盘 / 文件）' }, { value: 2, label: '卡密商品（激活码软件）' }],
+      formatOpts: ['PDF', 'Word', 'PPT', 'Excel', '压缩包'].map(v => ({ value: v, label: v })),
+      levelOpts: [
+        { value: 0, label: '平铺' },
+        { value: 1, label: '章' },
+        { value: 2, label: '节' },
+        { value: 3, label: '条目' }
+      ],
+      previews: _m.previews || [],
+      categories: window.CATEGORIES || [],
+      categoryOpts: [{value:'', label:'请选择分类'}, ...categoryTreeOpts(window.CATEGORIES || [])],
+      saving: false,
+      uploadingPreview: false
+    };
+  },
+  mounted() {
+    this._quill = new Quill('#quill-editor', {
+      theme: 'snow',
+      placeholder: '资料详细介绍，可包含适用年级、内容亮点等...',
+      modules: { toolbar: [
+        [{ header: [1,2,3,false] }],
+        ['bold','italic','underline','strike'],
+        [{ color:[] },{ background:[] }],
+        [{ list:'ordered' },{ list:'bullet' }],
+        ['link'],
+        ['clean']
+      ]}
+    });
+    if (this.form.description) this._quill.root.innerHTML = this.form.description;
+  },
+  methods: {
+    addTag() {
+      const val = this.tagInputVal.trim().replace(/,/g, '');
+      if (val && !this.tagList.includes(val)) this.tagList.push(val);
+      this.tagInputVal = '';
+    },
+    async saveAs(status) {
+      if (!this.form.title) return BizHelper.toast('请填写资料标题','warning');
+      if (!this.form.category_id) return BizHelper.toast('请选择分类','warning');
+      if (!this.form.price && this.form.price !== 0) return BizHelper.toast('请填写价格','warning');
+      this.saving = true;
+      this.form.status      = status;
+      this.form.tags        = this.tagList.join(',');
+      this.form.description = this._quill.root.innerHTML;
+      this.form.catalog = JSON.stringify(this.catalog);
+      const r = await BizHelper.request('/admin/material/save', this.form);
+      this.saving = false;
+      if (r.code === 0) {
+        this.materialId = r.data.id;
+        this.form.id = r.data.id;
+        BizHelper.toast(status===1?'已发布上架':'已保存为草稿');
+        if (!_m.id) {
+          setTimeout(() => location.href = '/admin/material/edit?id=' + r.data.id, 1000);
+        }
+      } else {
+        BizHelper.toast(r.msg, 'error');
+      }
+    },
+    async parseUploadResponse(response) {
+      const contentType = response.headers.get('Content-Type') || '';
+      if (contentType.includes('application/json')) return response.json();
+      await response.text();
+      const message = response.status === 413
+        ? '文件过大，服务器拒绝接收，请检查上传限制'
+        : `上传失败（HTTP ${response.status || '网络错误'}），请稍后重试`;
+      return { code: response.status || 1, msg: message };
+    },
+    async uploadCover(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+      const fd = new FormData();
+      fd.append('file', file);
+      try {
+        const r = await fetch('/admin/material/upload/cover', { method: 'POST', body: fd, headers: { 'X-CSRF-TOKEN': window.CSRF_TOKEN || '' } });
+        const data = await this.parseUploadResponse(r);
+        if (data.code === 0) this.form.cover = data.data.url;
+        else BizHelper.toast(data.msg, 'error');
+      } catch (_) {
+        BizHelper.toast('封面上传失败，请检查网络后重试', 'error');
+      }
+    },
+    async uploadFile(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+      BizHelper.toast('文件上传中，请稍候...', 'info');
+      const fd = new FormData();
+      fd.append('file', file);
+      try {
+        const r = await fetch('/admin/material/upload/file', { method: 'POST', body: fd, headers: { 'X-CSRF-TOKEN': window.CSRF_TOKEN || '' } });
+        const data = await this.parseUploadResponse(r);
+        if (data.code === 0) {
+          this.form.file_path = data.data.path;
+          this.form.file_name = data.data.name;
+          this.form.file_size = data.data.size;
+          BizHelper.toast('文件上传成功');
+        } else {
+          BizHelper.toast(data.msg, 'error');
+        }
+      } catch (_) {
+        BizHelper.toast('资料上传失败，请检查网络后重试', 'error');
+      }
+    },
+    async uploadPreview(e) {
+      const files = Array.from(e.target.files);
+      if (!files.length) return;
+      if (!this.materialId) return BizHelper.toast('请先保存资料基本信息','warning');
+      this.uploadingPreview = true;
+      try {
+        for (const file of files) {
+          const fd = new FormData();
+          fd.append('file', file);
+          fd.append('material_id', this.materialId);
+          const r = await fetch('/admin/material/upload/preview', { method: 'POST', body: fd, headers: { 'X-CSRF-TOKEN': window.CSRF_TOKEN || '' } });
+          const data = await this.parseUploadResponse(r);
+          if (data.code === 0) this.previews.push(data.data);
+          else BizHelper.toast(data.msg, 'error');
+        }
+      } catch (_) {
+        BizHelper.toast('试看图上传失败，请检查网络后重试', 'error');
+      } finally {
+        this.uploadingPreview = false;
+        e.target.value = '';
+      }
+    },
+    async delPreview(id, idx) {
+      const ok = await BizHelper.confirm('删除该试看页面？');
+      if (!ok) return;
+      const r = await BizHelper.request('/admin/material/delete/preview', { id });
+      if (r.code === 0) { this.previews.splice(idx, 1); BizHelper.toast('已删除'); }
+    }
+  }
+}).mount('#app');
+</script>
+{/block}
